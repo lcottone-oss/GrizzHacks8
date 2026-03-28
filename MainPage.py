@@ -122,7 +122,7 @@ def small_businesses():
 def personal_injury():
     return render_template("p_injury.html")
 
-@app.route("/small_Claims")
+@app.route("/Small_Claims")
 def small_claims():
     return render_template("s_claims.html")
 
