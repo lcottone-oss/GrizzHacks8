@@ -19,6 +19,9 @@ import os
 from dotenv import load_dotenv
 import google.generativeai as genai
 
+#Delete this key from gemini account as soon as competition ends
+genai.configure(api_key="AIzaSyBFX0cY1AqUX2u6rcjbxKw32W1Z2Z0nEuc")
+
 # Load environment variables from .env file
 load_dotenv()
 
@@ -77,7 +80,7 @@ Explain everything in 6th-grade English. If you use a legal word, explain it imm
 Answer the user's question clearly and helpfully."""
         
         # Initialize Gemini model
-        model = genai.GenerativeModel("gemini-1.5-flash", system_instruction=system_instruction)
+        model = genai.GenerativeModel("gemini-2.5-flash", system_instruction=system_instruction)
         
         # Send message to Gemini and get response
         response = model.generate_content(user_message)
