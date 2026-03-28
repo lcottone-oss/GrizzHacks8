@@ -1,5 +1,103 @@
 {% extends "base.html" %}
 {% block title %} Main Page {% endblock %}
 {% block content %}
-<h1>Who We Are</h1>
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <h1>Michigan Legal Navigator</h1>
+            <p class="text-muted">Ask any questions about Michigan law. Our AI helper will explain things in simple terms.</p>
+            
+            <!-- Chat Window -->
+            <div class="card" style="height: 500px; display: flex; flex-direction: column;">
+                <div class="card-body" id="chatWindow" style="overflow-y: auto; flex-grow: 1;">
+                    <div class="alert alert-info" role="alert">
+                        Welcome! I'm here to help you understand Michigan law. Ask me anything!
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="userInput" placeholder="Ask about Michigan law...">
+                        <div class="input-group-append">
+                            <button class="btn btn-primary" type="button" id="sendBtn">Send</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .user-message {
+        text-align: right;
+        margin: 10px 0;
+        padding: 10px;
+        background-color: #007bff;
+        color: white;
+        border-radius: 5px;
+        max-width: 70%;
+        margin-left: auto;
+    }
+    
+    .assistant-message {
+        text-align: left;
+        margin: 10px 0;
+        padding: 10px;
+        background-color: #e9ecef;
+        color: black;
+        border-radius: 5px;
+        max-width: 70%;
+    }
+</style>
+
+<script>
+    document.getElementById("sendBtn").addEventListener("click", sendMessage);
+    document.getElementById("userInput").addEventListener("keypress", function(e) {
+        if (e.key === "Enter") sendMessage();
+    });
+
+    function sendMessage() {
+        const userInput = document.getElementById("userInput").value.trim();
+        if (!userInput) return;
+
+        // Display user message
+        const chatWindow = document.getElementById("chatWindow");
+        const userMessage = document.createElement("div");
+        userMessage.className = "user-message";
+        userMessage.textContent = userInput;
+        chatWindow.appendChild(userMessage);
+
+        // Clear input
+        document.getElementById("userInput").value = "";
+
+        // Send to backend
+        fetch("/chat", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ message: userInput })
+        })
+        .then(response => response.json())
+        .then(data => {
+            const assistantMessage = document.createElement("div");
+            assistantMessage.className = "assistant-message";
+            assistantMessage.textContent = data.response || data.error || "No response received";
+            chatWindow.appendChild(assistantMessage);
+            
+            // Auto-scroll to bottom
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        })
+        .catch(error => {
+            console.error("Error:", error);
+            const errorMessage = document.createElement("div");
+            errorMessage.className = "assistant-message";
+            errorMessage.textContent = "Error connecting to the server. Please try again.";
+            chatWindow.appendChild(errorMessage);
+        });
+
+        // Auto-scroll to bottom
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+</script>
 {% endblock %}

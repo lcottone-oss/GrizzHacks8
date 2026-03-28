@@ -1,0 +1,12 @@
+{
+  "small_claims": {
+    "limit": 7000,
+    "fee_max": 70,
+    "jargon_definition": "A fast court where you don't need a lawyer for cases under $7,000."
+  },
+  "renter_rights": {
+    "deposit_limit_ratio": 1.5,
+    "return_days": 30,
+    "jargon_definition": "Rules that protect you from unfair landlords or high deposits."
+  }
+}
