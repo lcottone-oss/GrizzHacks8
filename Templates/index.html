@@ -525,6 +525,42 @@
         }
     });
 
+    function escapeHtml(text) {
+        return text.replace(/&/g, '&amp;')
+                   .replace(/</g, '&lt;')
+                   .replace(/>/g, '&gt;')
+                   .replace(/"/g, '&quot;')
+                   .replace(/'/g, '&#039;');
+    }
+
+    function formatChatMessage(text) {
+        let html = escapeHtml(text);
+
+        // Basic Markdown-like formatting
+        html = html.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
+        html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+        html = html.replace(/\*\*\*([^*]+)\*\*\*/g, '<strong><em>$1</em></strong>');
+        html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+        html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+        html = html.replace(/__([^_]+)__/g, '<strong>$1</strong>');
+        html = html.replace(/_([^_]+)_/g, '<em>$1</em>');
+        html = html.replace(/^###### (.*)$/gm, '<h6>$1</h6>');
+        html = html.replace(/^##### (.*)$/gm, '<h5>$1</h5>');
+        html = html.replace(/^#### (.*)$/gm, '<h4>$1</h4>');
+        html = html.replace(/^### (.*)$/gm, '<h3>$1</h3>');
+        html = html.replace(/^## (.*)$/gm, '<h2>$1</h2>');
+        html = html.replace(/^# (.*)$/gm, '<h1>$1</h1>');
+        html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+
+        // Simple bullet list conversion
+        html = html.replace(/^\s*[-*+] (.*)$/gm, '<div class="markdown-list-item">• $1</div>');
+
+        // Preserve line breaks
+        html = html.replace(/\n/g, '<br>');
+
+        return html;
+    }
+
     // Send message
     document.getElementById('userInput').addEventListener('keypress', function(e) {
         if (e.key === 'Enter') sendMessage();
@@ -561,7 +597,8 @@
         .then(data => {
             const assistantMessage = document.createElement('div');
             assistantMessage.className = 'assistant-message';
-            assistantMessage.textContent = data.response || data.error || 'No response received';
+            const responseText = data.response || data.error || 'No response received';
+            assistantMessage.innerHTML = formatChatMessage(responseText);
             chatWindow.appendChild(assistantMessage);
             chatWindow.scrollTop = chatWindow.scrollHeight;
         })
