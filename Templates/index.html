@@ -317,9 +317,14 @@
         padding: 10px 12px;
         border: 1px solid var(--charcoal-light);
         background: var(--limestone);
-        color: var(--charcoal);
+        color: #0f172a; /* high contrast dark text for readability */
         font-size: 14px;
         transition: all 0.3s ease;
+    }
+
+    .chat-footer input::placeholder {
+        color: #6b7280; /* legible placeholder */
+        opacity: 1;
     }
 
     .chat-footer input:focus {
@@ -409,18 +414,18 @@
     <div class="hero scroll-fade">
         <h1>Know Your Rights</h1>
         <p>Clear, plain-English legal guidance for Michigan residents. Ask our AI assistant about your rights and responsibilities.</p>
-        
-
-    </div>
-
-    <!-- Four Pillar Sections -->
+        <div class="zip-section">
+            <label for="zipCode">Zip Code (optional)</label>
+            <input type="text" id="zipCode" placeholder="e.g. 48104" maxlength="5" inputmode="numeric" pattern="[0-9]*">
+            <p>Optional. Helps tailor advice to your local Michigan area.</p>
+        </div>
     <div class="pillar-grid">
         <!-- Small Business -->
         <div class="judicial-section scroll-fade heavy-place">
             <span class="section-icon">💼</span>
             <h2 class="section-title">Small Business</h2>
             <p class="section-description">Learn about business licenses, contracts, employment law, and other requirements for operating a business in Michigan.</p>
-            <a href="#" onclick="quickQuestion('What legal requirements apply to small businesses in Michigan?')" class="legal-link">Learn More →</a>
+            <a href="#" onclick="quickQuestion('What legal requirements apply to small businesses in Michigan?', event)" class="legal-link">Learn More →</a>
         </div>
 
         <!-- Small Claims -->
@@ -428,7 +433,7 @@
             <span class="section-icon">⚖️</span>
             <h2 class="section-title">Small Claims</h2>
             <p class="section-description">Understand how to file a small claims case, recover money owed to you, and navigate the court process in Michigan.</p>
-            <a href="#" onclick="quickQuestion('How do I file a small claims case in Michigan?')" class="legal-link">Learn More →</a>
+            <a href="#" onclick="quickQuestion('How do I file a small claims case in Michigan?', event)" class="legal-link">Learn More →</a>
         </div>
 
         <!-- Renter's Rights -->
@@ -436,7 +441,7 @@
             <span class="section-icon">🏠</span>
             <h2 class="section-title">Renter's Rights</h2>
             <p class="section-description">Know your rights as a tenant, understand landlord responsibilities, lease laws, and eviction protections in Michigan.</p>
-            <a href="#" onclick="quickQuestion('What are my rights as a tenant in Michigan?')" class="legal-link">Learn More →</a>
+            <a href="#" onclick="quickQuestion('What are my rights as a tenant in Michigan?', event)" class="legal-link">Learn More →</a>
         </div>
 
         <!-- Personal Injury -->
@@ -444,7 +449,7 @@
             <span class="section-icon">🚗</span>
             <h2 class="section-title">Personal Injury</h2>
             <p class="section-description">Get guidance on car accidents, slip and fall, workplace injuries, and how to pursue compensation claims.</p>
-            <a href="#" onclick="quickQuestion('What should I do after a car accident in Michigan?')" class="legal-link">Learn More →</a>
+            <a href="#" onclick="quickQuestion('What should I do after a car accident in Michigan?', event)" class="legal-link">Learn More →</a>
         </div>
     </div>
 </div>
@@ -490,8 +495,10 @@
     }
 
     // Quick question action
-    function quickQuestion(question) {
-        event.preventDefault();
+    function quickQuestion(question, event) {
+        if (event && typeof event.preventDefault === 'function') {
+            event.preventDefault();
+        }
         document.getElementById('userInput').value = question;
         const chatWrapper = document.getElementById('chatWrapper');
         if (!chatWrapper.classList.contains('visible')) {
@@ -502,18 +509,57 @@
         }, 300);
     }
 
-    // Store zip code
-    document.getElementById('zipCode').addEventListener('change', function() {
-        localStorage.setItem('userZipCode', this.value);
-    });
+    // Store zip code safely (may not exist in all modes)
+    const zipCodeInput = document.getElementById('zipCode');
+    if (zipCodeInput) {
+        zipCodeInput.addEventListener('change', function() {
+            localStorage.setItem('userZipCode', this.value);
+        });
+    }
 
     // Load saved zip code
     window.addEventListener('DOMContentLoaded', function() {
         const savedZip = localStorage.getItem('userZipCode');
-        if (savedZip) {
-            document.getElementById('zipCode').value = savedZip;
+        if (savedZip && zipCodeInput) {
+            zipCodeInput.value = savedZip;
         }
     });
+
+    function escapeHtml(text) {
+        return text.replace(/&/g, '&amp;')
+                   .replace(/</g, '&lt;')
+                   .replace(/>/g, '&gt;')
+                   .replace(/"/g, '&quot;')
+                   .replace(/'/g, '&#039;');
+    }
+
+    function formatChatMessage(text) {
+        let html = escapeHtml(text);
+
+        // Basic Markdown-like formatting
+        html = html.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
+        html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+        html = html.replace(/\*\*\*([^*]+)\*\*\*/g, '<strong><em>$1</em></strong>');
+        html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+        html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+        html = html.replace(/__([^_]+)__/g, '<strong>$1</strong>');
+        html = html.replace(/_([^_]+)_/g, '<em>$1</em>');
+        html = html.replace(/^###### (.*)$/gm, '<h6>$1</h6>');
+        html = html.replace(/^##### (.*)$/gm, '<h5>$1</h5>');
+        html = html.replace(/^#### (.*)$/gm, '<h4>$1</h4>');
+        html = html.replace(/^### (.*)$/gm, '<h3>$1</h3>');
+        html = html.replace(/^## (.*)$/gm, '<h2>$1</h2>');
+        html = html.replace(/^# (.*)$/gm, '<h1>$1</h1>');
+        html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+
+        // Simple bullet list conversion
+        html = html.replace(/^\s*[-*+] (.*)$/gm, '<div class="markdown-list-item">• $1</div>');
+
+        // Preserve line breaks
+        html = html.replace(/\n/g, '<br>');
+
+        return html;
+    }
 
     // Send message
     document.getElementById('userInput').addEventListener('keypress', function(e) {
@@ -522,7 +568,8 @@
 
     function sendMessage() {
         const userInput = document.getElementById('userInput').value.trim();
-        const zipCode = document.getElementById('zipCode').value.trim();
+        const zipCodeInput = document.getElementById('zipCode');
+        const zipCode = zipCodeInput ? zipCodeInput.value.trim() : '';
         
         if (!userInput) return;
 
@@ -550,7 +597,8 @@
         .then(data => {
             const assistantMessage = document.createElement('div');
             assistantMessage.className = 'assistant-message';
-            assistantMessage.textContent = data.response || data.error || 'No response received';
+            const responseText = data.response || data.error || 'No response received';
+            assistantMessage.innerHTML = formatChatMessage(responseText);
             chatWindow.appendChild(assistantMessage);
             chatWindow.scrollTop = chatWindow.scrollHeight;
         })
