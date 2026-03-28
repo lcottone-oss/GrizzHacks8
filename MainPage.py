@@ -75,9 +75,10 @@ def home():
 def chat():
     """Chatbot route that uses Gemini API with Michigan legal context."""
     try:
-        # Get user message from request
+        # Get user message and zip code from request
         data = request.get_json()
         user_message = data.get("message", "")
+        zip_code = data.get("zipCode", None)
         
         if not user_message:
             return jsonify({"error": "No message provided"}), 400
@@ -90,6 +91,10 @@ def chat():
 
 Explain everything in 6th-grade English. If you use a legal word, explain it immediately in parentheses.
 Answer the user's question clearly and helpfully."""
+        
+        # Add zip code context if provided (for future local court mapping)
+        if zip_code:
+            system_instruction += f"\n\nUser's location: Michigan zip code {zip_code}"
         
         # Initialize Gemini model
         model = genai.GenerativeModel("gemini-2.5-flash", system_instruction=system_instruction)

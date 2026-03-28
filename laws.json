@@ -1,12 +1,25 @@
 {
   "small_claims": {
     "limit": 7000,
-    "fee_max": 70,
-    "jargon_definition": "A fast court where you don't need a lawyer for cases under $7,000."
+    "forms": "https://www.courts.michigan.gov/siteassets/forms/scao-approved/dc84.pdf",
+    "e_file": "https://mifile.courts.michigan.gov/",
+    "plain_info": "Cases under $7k. No lawyers allowed. Fast process."
   },
   "renter_rights": {
-    "deposit_limit_ratio": 1.5,
-    "return_days": 30,
-    "jargon_definition": "Rules that protect you from unfair landlords or high deposits."
+    "deposit_max": "1.5x monthly rent",
+    "return_deadline": "30 days after move-out",
+    "eviction_form": "https://www.courts.michigan.gov/siteassets/forms/scao-approved/dc102a.pdf",
+    "plain_info": "Rules for security deposits and eviction notices."
+  },
+  "personal_injury": {
+    "statute_of_limitations": "3 years (Standard), 2 years (Medical Malpractice)",
+    "mini_tort_limit": 3000,
+    "plain_info": "Deadlines to sue for accidents or medical errors."
+  },
+  "small_business": {
+    "registration": "https://mibusinessregistry.lara.state.mi.us/",
+    "grant_match_on_main": "https://www.miplace.org/small-business/match-on-main/",
+    "grant_deadline": "April 20, 2026",
+    "plain_info": "LARA registration and Match on Main grants ($25k)."
   }
 }
