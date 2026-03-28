@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}Legal Resources - Mitten Mentor{% endblock %}
+
+{% block extra_head %}
+<style>
+    .resources-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 60px 20px;
+    }
+
+    .resources-header {
+        text-align: center;
+        margin-bottom: 60px;
+    }
+
+    .resources-header h1 {
+        font-size: 3rem;
+        color: var(--charcoal);
+        margin-bottom: 16px;
+        font-family: 'Playfair Display', serif;
+    }
+
+    .resources-header p {
+        font-size: 1.2rem;
+        color: var(--legal-gray);
+        max-width: 600px;
+        margin: 0 auto;
+    }
+
+    .resources-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 24px;
+        margin-bottom: 80px;
+    }
+
+    .resource-card {
+        padding: 40px;
+        border: 3px solid var(--accent-gold);
+        border-radius: 24px;
+        background: rgba(255, 255, 255, 0.08);
+        backdrop-filter: blur(10px);
+        text-decoration: none;
+        color: inherit;
+        transition: all 0.4s ease;
+        display: flex;
+        flex-direction: column;
+        cursor: pointer;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    }
+
+    .resource-card h3 {
+        font-size: 1.8rem;
+        color: var(--charcoal) !important;
+        margin-bottom: 12px;
+        font-family: 'Playfair Display', serif;
+        font-weight: 700;
+    }
+
+    .resource-card p {
+        color: var(--legal-gray);
+        font-size: 16px;
+        line-height: 1.6;
+        flex-grow: 1;
+        margin-bottom: 20px;
+    }
+
+    .resource-card::before {
+        content: '→';
+        font-size: 1.5rem;
+        color: var(--accent-gold);
+        margin-top: auto;
+        transition: transform 0.3s ease;
+    }
+
+    .resource-card:hover {
+        background: rgba(255, 255, 255, 0.12);
+        box-shadow: 0 12px 40px rgba(212, 175, 55, 0.15);
+        transform: translateY(-4px);
+    }
+
+    .resource-card:hover::before {
+        transform: translateX(6px);
+    }
+
+    @media (max-width: 768px) {
+        .resources-header h1 {
+            font-size: 2rem;
+        }
+
+        .resources-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="resources-container">
+    <div class="resources-header">
+        <h1>Legal Resources</h1>
+        <p>Explore our comprehensive guides on Michigan law. Click on any topic to learn more.</p>
+    </div>
+
+    <div class="resources-grid">
+        {% for topic in topics %}
+        <a href="/topic/{{ topic.id }}" class="resource-card">
+            <h3>{{ topic.title }}</h3>
+            <p>{{ topic.description }}</p>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

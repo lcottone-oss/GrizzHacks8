@@ -126,5 +126,25 @@ def personal_injury():
 def small_claims():
     return render_template("s_claims.html")
 
+@app.route("/resources")
+def resources():
+    """Display all available legal topics."""
+    try:
+        topics = list(db.legal_topics.find())
+        return render_template("resources.html", topics=topics)
+    except Exception as e:
+        return f"Error loading resources: {str(e)}", 500
+
+@app.route("/topic/<topic_id>")
+def topic_page(topic_id):
+    """Display detailed legal information for a topic."""
+    try:
+        topic = db.legal_topics.find_one({"id": topic_id})
+        if not topic:
+            return "Topic not found", 404
+        return render_template("topic.html", topic=topic)
+    except Exception as e:
+        return f"Error loading topic: {str(e)}", 500
+
 if __name__ == "__main__":
     app.run(debug = True)

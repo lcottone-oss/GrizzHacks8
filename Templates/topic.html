@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block title %}{{ topic.title }} - Mitten Mentor{% endblock %}
+
+{% block extra_head %}
+<style>
+    .topic-container {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 60px 20px;
+    }
+
+    .topic-header {
+        margin-bottom: 60px;
+        text-align: center;
+    }
+
+    .topic-header h1 {
+        font-size: 3rem;
+        color: var(--charcoal);
+        margin-bottom: 20px;
+        font-family: 'Playfair Display', serif;
+        font-weight: 800;
+    }
+
+    .topic-header p {
+        font-size: 1.2rem;
+        color: var(--legal-gray);
+        line-height: 1.8;
+    }
+
+    .topic-intro {
+        background: rgba(255, 255, 255, 0.08);
+        backdrop-filter: blur(10px);
+        border: 2px solid var(--accent-gold);
+        border-radius: 12px;
+        padding: 30px;
+        margin: 40px 0;
+        color: var(--charcoal);
+        line-height: 1.8;
+    }
+
+    .subtopics-title {
+        font-size: 2rem;
+        color: var(--charcoal);
+        margin: 60px 0 40px 0;
+        font-family: 'Playfair Display', serif;
+    }
+
+    .subtopic {
+        margin-bottom: 40px;
+        padding: 30px;
+        border: 2px solid rgba(212, 175, 55, 0.3);
+        border-left: 4px solid var(--accent-gold);
+        border-radius: 8px;
+        background: rgba(232, 230, 225, 0.3);
+        transition: all 0.3s ease;
+    }
+
+    .subtopic:hover {
+        border-left-width: 6px;
+        box-shadow: 0 4px 12px rgba(212, 175, 55, 0.1);
+    }
+
+    .subtopic h3 {
+        font-size: 1.4rem;
+        color: var(--charcoal);
+        margin-bottom: 12px;
+        font-family: 'Playfair Display', serif;
+    }
+
+    .subtopic p {
+        color: var(--legal-gray);
+        line-height: 1.8;
+        font-size: 16px;
+    }
+
+    .back-button {
+        display: inline-block;
+        padding: 12px 24px;
+        background: var(--charcoal);
+        color: var(--accent-gold);
+        text-decoration: none;
+        border-radius: 6px;
+        margin-bottom: 40px;
+        transition: all 0.3s ease;
+        font-weight: 600;
+    }
+
+    .back-button:hover {
+        background: var(--charcoal-light);
+        transform: translateX(-4px);
+    }
+
+    @media (max-width: 768px) {
+        .topic-header h1 {
+            font-size: 2rem;
+        }
+
+        .subtopics-title {
+            font-size: 1.5rem;
+        }
+
+        .subtopic {
+            padding: 20px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="topic-container">
+    <a href="/resources" class="back-button">← Back to Resources</a>
+
+    <div class="topic-header">
+        <h1>{{ topic.title }}</h1>
+        <p>{{ topic.description }}</p>
+    </div>
+
+    <div class="topic-intro">
+        {{ topic.content }}
+    </div>
+
+    {% if topic.subtopics %}
+    <h2 class="subtopics-title">Key Topics</h2>
+    {% for subtopic in topic.subtopics %}
+    <div class="subtopic">
+        <h3>{{ subtopic.title }}</h3>
+        <p>{{ subtopic.content }}</p>
+    </div>
+    {% endfor %}
+    {% endif %}
+</div>
+{% endblock %}
