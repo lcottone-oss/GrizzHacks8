@@ -20,9 +20,6 @@ app = Flask(__name__)
 def home():
     return render_template("index.html")
 
-if __name__ == "__main__":
-    app.run(debug = True)
-
 @app.route("/Renters_Rights")
 def renters_rights():
     return render_template("RentersRights.html")
@@ -35,6 +32,9 @@ def small_businesses():
 def personal_injury():
     return render_template("p_injury.html")
 
-@app.route("/small_Claims")
+@app.route("/Small_Claims")
 def small_claims():
     return render_template("s_claims.html")
+
+if __name__ == "__main__":
+    app.run(debug = True)
