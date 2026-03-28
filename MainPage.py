@@ -25,7 +25,7 @@ if __name__ == "__main__":
 
 @app.route("/Renters_Rights")
 def renters_rights():
-    return render_template("renters_rights.html")
+    return render_template("RentersRights.html")
 
 @app.route("/Small_Businesses")
 def small_businesses():
@@ -35,6 +35,6 @@ def small_businesses():
 def personal_injury():
     return render_template("p_injury.html")
 
-@app.route("/Small_Businesses")
-def small_businesses():
-    return render_template("s_businesses.html")
+@app.route("/small_Claims")
+def small_claims():
+    return render_template("s_claims.html")
