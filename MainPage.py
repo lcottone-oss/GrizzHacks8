@@ -89,9 +89,6 @@ Answer the user's question clearly and helpfully."""
     except Exception as e:
         return jsonify({"error": f"Error processing request: {str(e)}"}), 500
 
-
-    app.run(debug = True)
-
 @app.route("/Renters_Rights")
 def renters_rights():
     return render_template("RentersRights.html")
@@ -107,3 +104,6 @@ def personal_injury():
 @app.route("/small_Claims")
 def small_claims():
     return render_template("s_claims.html")
+
+if __name__ == "__main__":
+    app.run(debug = True)
