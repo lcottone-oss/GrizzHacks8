@@ -13,26 +13,38 @@ Attempting to win:
     Best use of Gemini API
 '''
 from flask import Flask, redirect, url_for, render_template, request, session, jsonify # type: ignore
-from datetime import timedelta
 import json
 import os
 from dotenv import load_dotenv
 import google.generativeai as genai
+import os
+from pymongo import MongoClient
 
-#Delete this key from gemini account as soon as competition ends
-genai.configure(api_key="AIzaSyBFX0cY1AqUX2u6rcjbxKw32W1Z2Z0nEuc")
+def database_conn():
+    # Load variables from .env
+    load_dotenv()
+
+    # Connect to MongoDB Atlas
+    client = MongoClient(os.getenv("MONGO_URI"))
+
+    # set variable db = the mangoDB hackathonDB database
+    db = client["hackathonDB"]
+    return db
 
 # Load environment variables from .env file
 load_dotenv()
 
 app = Flask(__name__)
 
+#Connect to Database and assign it to db
+db = database_conn()
+
 # Configure Gemini API
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-if GEMINI_API_KEY:
-    genai.configure(api_key=GEMINI_API_KEY)
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+if GOOGLE_API_KEY:
+    genai.configure(api_key=GOOGLE_API_KEY)
 else:
-    print("WARNING: GEMINI_API_KEY not found in .env file")
+    print("WARNING: GOOGLE_API_KEY not found in .env file")
 
 # Function to load Michigan laws context
 def get_mi_context():
@@ -94,7 +106,8 @@ Answer the user's question clearly and helpfully."""
 
 @app.route("/Renters_Rights")
 def renters_rights():
-    return render_template("RentersRights.html")
+    data1 = list(db.LegalInfo.find())
+    return render_template("RentersRights.html", data = data1)
 
 @app.route("/Small_Businesses")
 def small_businesses():

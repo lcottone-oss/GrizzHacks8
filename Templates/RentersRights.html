@@ -2,4 +2,9 @@
 {% block title %} Renter's Rights {% endblock %}
 {% block content %}
 <h1>Who We Are</h1>
+<ul>
+  {% for item in data %}
+    <li>{{ item }}</li>
+  {% endfor %}
+</ul>
 {% endblock %}
