@@ -32,13 +32,13 @@ collection = chroma_client.get_collection(
     # metadata={"hnsw:space": "cosine"}
 )
 
-# SERVICE = "openai"
+SERVICE = "openai"
 # SERVICE = "gemini"
-SERVICE = "claude"
+# SERVICE = "claude"
 openai_client = OpenAI()
-# GEMINI_MODEL = "gemini-3.1-flash-lite-preview"
 claude_client = anthropic.Anthropic()
 
+# GEMINI_MODEL = "gemini-3.1-flash-lite-preview"
 GEMINI_MODEL = "gemini-2.5-flash-lite"
 
 OPENAI_MODEL = "gpt-4o-mini"
@@ -382,7 +382,10 @@ def chat():
         )
 
         if zip_code:
-            system_instruction += f"\n\nUser's location: Michigan zip code {zip_code}."
+            if (int(zip_code) >= 48001 and int(zip_code) <= 49971):
+                system_instruction += f"\n\nUser's location: Michigan zip code {zip_code}."
+            else:
+                system_instruction += f"\n\nUser's location: Michigan (invalid zip code {zip_code} provided)."
 
         if mcl_context:
             system_instruction += f"\n\nUse these relevant Michigan laws to answer:\n\n{mcl_context}"
