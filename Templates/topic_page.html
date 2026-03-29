@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+
+{% block title %}{{ topic.title }} - Civix{% endblock %}
+
+{% block extra_head %}
+<style>
+    .subtopic-card {
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    
+    .subtopic-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 12px 32px rgba(0, 26, 77, 0.2);
+    }
+    
+    .quick-fact-badge {
+        background: #fff3cd;
+        border-left: 4px solid #001a4d;
+        padding: 12px;
+        margin: 8px 0;
+        border-radius: 4px;
+    }
+    
+    .form-link {
+        display: inline-block;
+        background: #001a4d;
+        color: white;
+        padding: 8px 16px;
+        border-radius: 4px;
+        text-decoration: none;
+        margin: 4px;
+        transition: background 0.3s ease;
+    }
+    
+    .form-link:hover {
+        background: #003d99;
+        text-decoration: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bg-white min-h-screen">
+    <!-- Hero Section -->
+    <div class="judicial-blue text-white py-16">
+        <div class="max-w-6xl mx-auto px-4">
+            <h1 class="text-5xl font-bold mb-4">{{ topic.title }}</h1>
+            <p class="text-xl opacity-90">{{ topic.description }}</p>
+        </div>
+    </div>
+
+    <div class="max-w-6xl mx-auto px-4 py-12">
+        <div class="grid grid-cols-3 gap-12">
+            <!-- Main Content -->
+            <div class="col-span-2">
+                <!-- Quick Facts -->
+                {% if topic.quick_facts %}
+                <div class="mb-12">
+                    <h2 class="text-3xl font-bold mb-6 text-blue-900">⚡ Quick Facts</h2>
+                    {% for fact in topic.quick_facts %}
+                    <div class="quick-fact-badge">
+                        <span class="font-semibold text-blue-900">{{ fact }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <!-- Subtopics Grid -->
+                <h2 class="text-3xl font-bold mb-8 text-blue-900">Explore Topics</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {% for subtopic in topic.subtopics %}
+                    <div class="subtopic-card bg-white border-2 border-blue-900 rounded-lg p-6 shadow-md">
+                        <div class="text-4xl mb-3">{{ subtopic.icon }}</div>
+                        <h3 class="text-xl font-bold text-blue-900 mb-3">{{ subtopic.name }}</h3>
+                        <p class="text-gray-700 mb-4">{{ subtopic.plain_english }}</p>
+                        <button onclick="openTriageChat('{{ category }}', '{{ subtopic.name }}')" class="inline-block bg-blue-900 text-white px-4 py-2 rounded hover:bg-blue-800 transition">
+                            Get Help →
+                        </button>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Sidebar: Forms & Links -->
+            <div class="col-span-1">
+                <div class="sticky top-24 bg-gray-100 rounded-lg p-6">
+                    <h3 class="text-xl font-bold text-blue-900 mb-4">📋 Forms & Resources</h3>
+                    {% if forms_links %}
+                        {% for key, value in forms_links.items() %}
+                            {% if key not in ['plain_info', 'jargon_definition'] and value %}
+                                {% if value.startswith('http') %}
+                                <a href="{{ value }}" target="_blank" class="form-link block mb-2">
+                                    {{ key.replace('_', ' ').title() }}
+                                </a>
+                                {% endif %}
+                            {% endif %}
+                        {% endfor %}
+                    {% else %}
+                    <p class="text-gray-600">Forms coming soon</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Triage Chat Modal -->
+<div id="triageModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg max-w-2xl w-full mx-4 max-h-96 flex flex-col">
+        <!-- Header -->
+        <div class="judicial-blue text-white p-6 flex items-center justify-between rounded-t-lg">
+            <h2 class="text-2xl font-bold" id="triageTitle">Triage Chat</h2>
+            <button onclick="closeTriageChat()" class="text-2xl hover:opacity-75">✕</button>
+        </div>
+
+        <!-- Chat Area -->
+        <div id="chatMessages" class="flex-1 overflow-y-auto p-6 bg-gray-50">
+            <!-- Messages will appear here -->
+        </div>
+
+        <!-- Input -->
+        <div class="p-4 border-t flex gap-2">
+            <input type="text" id="userInput" class="flex-1 border border-gray-300 rounded px-4 py-2 focus:outline-none focus:border-blue-900" placeholder="Describe your situation...">
+            <button onclick="sendTriageMessage()" class="bg-blue-900 text-white px-6 py-2 rounded hover:bg-blue-800">Send</button>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentCategory = '';
+let currentSubtopic = '';
+let chatHistory = [];
+
+function openTriageChat(category, subtopic) {
+    currentCategory = category;
+    currentSubtopic = subtopic;
+    chatHistory = [];
+    document.getElementById('triageModal').classList.remove('hidden');
+    document.getElementById('triageTitle').textContent = `Triage: ${subtopic}`;
+    document.getElementById('chatMessages').innerHTML = '<div class="text-gray-600 mb-4">How can we help with ' + subtopic + '?</div>';
+}
+
+function closeTriageChat() {
+    document.getElementById('triageModal').classList.add('hidden');
+}
+
+async function sendTriageMessage() {
+    const input = document.getElementById('userInput');
+    const message = input.value.trim();
+    if (!message) return;
+
+    // Add user message
+    chatHistory.push({ role: 'user', content: message });
+    addMessageToChat('user', message);
+    input.value = '';
+
+    // Get AI response
+    try {
+        const response = await fetch('/api/triage-chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                category: currentCategory,
+                subtopic: currentSubtopic,
+                message: message,
+                history: chatHistory
+            })
+        });
+
+        const data = await response.json();
+        chatHistory.push({ role: 'assistant', content: data.response });
+        addMessageToChat('assistant', data.response);
+
+        // Save conversation after response
+        await saveConversation(message);
+    } catch (error) {
+        console.error('Error:', error);
+        addMessageToChat('error', 'Sorry, there was an error. Please try again.');
+    }
+}
+
+function addMessageToChat(role, message) {
+    const chatMessages = document.getElementById('chatMessages');
+    const messageDiv = document.createElement('div');
+    messageDiv.className = role === 'user' ? 'text-right mb-4' : 'text-left mb-4';
+    messageDiv.innerHTML = `<div class="${role === 'user' ? 'bg-blue-900 text-white' : 'bg-white border border-gray-300'} inline-block max-w-xs px-4 py-2 rounded"><p>${message}</p></div>`;
+    chatMessages.appendChild(messageDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+async function saveConversation(initialMessage) {
+    try {
+        await fetch('/api/save-conversation', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                category: currentCategory,
+                subtopic: currentSubtopic,
+                messages: chatHistory,
+                user_state: initialMessage
+            })
+        });
+    } catch (error) {
+        console.error('Error saving conversation:', error);
+    }
+}
+
+// Allow Enter key to send
+document.addEventListener('DOMContentLoaded', () => {
+    const userInput = document.getElementById('userInput');
+    if (userInput) {
+        userInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendTriageMessage();
+        });
+    }
+});
+</script>
+{% endblock %}
