@@ -19,6 +19,7 @@ from dotenv import load_dotenv
 import google.generativeai as genai
 import os
 from pymongo import MongoClient
+import requests
 
 def database_conn():
     # Load variables from .env
@@ -67,6 +68,89 @@ def get_mi_context():
     except Exception as e:
         return f"Error loading Michigan laws: {str(e)}"
 
+def search_michigan_cases(query):
+    """
+    Search Michigan case law using CourtListener API v3.
+    Returns top 2 most recent opinions with citations and snippets.
+    
+    Args:
+        query (str): Search term for cases
+    
+    Returns:
+        list: Top 2 cases with caseName, citation, date_filed, snippet, and url
+    """
+    try:
+        # Get CourtListener API token from environment
+        api_token = os.getenv("COURTLISTENER_API_TOKEN")
+        if not api_token:
+            return []
+        
+        # CourtListener v3 Search API endpoint
+        url = "https://www.courtlistener.com/api/rest/v3/search/"
+        
+        # Set up headers with authentication
+        headers = {
+            "Authorization": f"Token {api_token}",
+            "Accept": "application/json"
+        }
+        
+        # Parameters: type='o' (opinions), court='mich' (Michigan)
+        params = {
+            "q": query,
+            "type": "o",  # Opinions only
+            "court": "mich",  # Michigan courts only
+            "order_by": "-date_filed"  # Most recent first
+        }
+        
+        response = requests.get(url, params=params, headers=headers, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        
+        # Extract top 2 cases
+        cases = []
+        for case_data in data.get("results", [])[:2]:
+            case_info = {
+                "caseName": case_data.get("case_name", "Unknown Case"),
+                "citation": case_data.get("citation", [{}])[0].get("cite", "Unknown Citation") if case_data.get("citation") else "Unknown Citation",
+                "date_filed": case_data.get("date_filed", "Unknown Date"),
+                "snippet": case_data.get("snippet", "No summary available"),
+                "url": case_data.get("absolute_url", ""),
+                "court": case_data.get("court", "Michigan Court")
+            }
+            cases.append(case_info)
+        
+        return cases
+    
+    except requests.exceptions.RequestException as e:
+        print(f"CourtListener API Error: {str(e)}")
+        return []
+    except Exception as e:
+        print(f"Error searching cases: {str(e)}")
+        return []
+
+def format_cases_context(cases):
+    """
+    Format case data into a readable context string for the chatbot.
+    
+    Args:
+        cases (list): List of case dictionaries
+    
+    Returns:
+        str: Formatted context string
+    """
+    if not cases:
+        return ""
+    
+    context = "\n\nRelevant Michigan Court Cases:\n"
+    for i, case in enumerate(cases, 1):
+        context += f"\n{i}. {case['caseName']}\n"
+        context += f"   Citation: {case['citation']}\n"
+        context += f"   Court: {case['court']}\n"
+        context += f"   Date: {case['date_filed']}\n"
+        context += f"   Summary: {case['snippet'][:300]}...\n"
+    
+    return context
+
 @app.route("/") #root page
 def home():
     return render_template("index.html")
@@ -91,6 +175,18 @@ def chat():
 
 Explain everything in 6th-grade English. If you use a legal word, explain it immediately in parentheses.
 Answer the user's question clearly and helpfully."""
+        
+        # Check if user is asking about case law or precedents
+        case_keywords = ["judge say", "judges say", "happened before", "case", "ruling", "precedent", "court decision", "what do lawyers"]
+        is_case_question = any(keyword in user_message.lower() for keyword in case_keywords)
+        
+        # If asking about cases, fetch and include relevant case law
+        if is_case_question:
+            cases = search_michigan_cases(user_message)
+            if cases:
+                cases_context = format_cases_context(cases)
+                system_instruction += cases_context
+                system_instruction += "\n\nPlease include information about these Michigan court cases in your answer and explain them in simple terms."
         
         # Add zip code context if provided (for future local court mapping)
         if zip_code:
@@ -145,6 +241,23 @@ def topic_page(topic_id):
         return render_template("topic.html", topic=topic)
     except Exception as e:
         return f"Error loading topic: {str(e)}", 500
+
+@app.route("/search-cases", methods=["GET", "POST"])
+def search_cases():
+    """Search for Michigan case law."""
+    cases = []
+    query = ""
+    
+    if request.method == "POST":
+        query = request.form.get("query", "").strip()
+        if query:
+            cases = search_michigan_cases(query)
+    elif request.method == "GET":
+        query = request.args.get("q", "").strip()
+        if query:
+            cases = search_michigan_cases(query)
+    
+    return render_template("case_law.html", cases=cases, query=query)
 
 if __name__ == "__main__":
     app.run(debug = True)
