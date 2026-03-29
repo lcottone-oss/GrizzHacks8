@@ -1,14 +1,19 @@
-# Michigan Legal Navigator - Setup & Run Instructions
+# Michigan Legal Navigator — Setup & Run Instructions
 
-This is a Flask web application that provides legal assistance for Michigan residents using the Gemini AI API.
+This is a Flask web application that provides legal assistance for Michigan residents. The chat feature is backed by a RAG pipeline over the full Michigan Compiled Laws (MCL) corpus, stored as a ChromaDB vector database.
+
+---
 
 ## Prerequisites
 
 - Python 3.8 or higher
-- Git (for cloning and version control)
-- A Gemini API key (free from Google AI Studio)
+- An API key for at least one supported LLM provider (OpenAI, Google Gemini, or Anthropic Claude)
+- An OpenAI API key with access to the Embeddings API (used for query embedding via text-embedding-3-small)
+- The pre-built ChromaDB MCL collection (not included in the repository — see note below)
 
-## Installation Steps
+---
+
+## Installation
 
 ### 1. Clone the Repository
 
@@ -17,152 +22,130 @@ git clone https://github.com/lcottone-oss/GrizzHacks8.git
 cd GrizzHacks8
 ```
 
-### 2. Get a Gemini API Key
-
-1. Go to [Google AI Studio](https://aistudio.google.com/app/apikey)
-2. Click "Create API Key"
-3. Copy your API key
-
-### 3. Create a `.env` File
-
-In the project root directory, create a file named `.env` and add:
-
-```
-GEMINI_API_KEY=your-api-key-here
-```
-
-Replace `your-api-key-here` with the actual API key you obtained in step 2.
-
-**Important:** Never commit the `.env` file to GitHub. It's already in `.gitignore`.
-
-### 4. Install Dependencies
+### 2. Install Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-This will install all required Python packages:
-- Flask (web framework)
-- python-dotenv (environment variable management)
-- google-generativeai (Gemini API)
+### 3. Configure API Keys
 
-## Running the Web App
+Create a `.env` file in the project root. Add keys for whichever provider(s) you plan to use:
 
-### Start the Flask Server
+```
+OPENAI_API_KEY=your-openai-key-here
+GEMINI_API_KEY=your-gemini-key-here
+ANTHROPIC_API_KEY=your-anthropic-key-here
+```
+
+You don't need all three LLM keys — only the one you intend to use. However, an OpenAI API key is always required regardless of your LLM choice, as it is used for embeddings.
+
+**Never commit `.env` to Git.** It is already listed in `.gitignore`.
+
+### 4. Obtain or Build the ChromaDB Collection
+
+The chat feature requires a local ChromaDB persistent collection containing pre-embedded chunks of the full MCL. This collection is not included in the repository because it exceeds 800 MB.
+
+To build it yourself:
+
+1. Obtain the full MCL text corpus
+2. Chunk the text into segments
+3. Embed each chunk using OpenAI's `text-embedding-3-small`
+4. Store the embeddings in a ChromaDB persistent collection
+
+Refer to the scripts in `ai-chatbot/` for the ingestion pipeline. Place the completed collection where the pipeline expects to find it before running the app.
+
+---
+
+## Running the App
 
 ```bash
 python MainPage.py
 ```
 
+Then open `http://localhost:5000` in your browser.
+
 You should see output like:
+
 ```
 WARNING: This is a development server. Do not use it in production deployments.
 Running on http://127.0.0.1:5000
 ```
 
-### Access the Application
+---
 
-Open your browser and navigate to:
+## Switching LLM Providers
 
-```
-http://localhost:5000
-```
+The chat backend supports OpenAI, Google Gemini, and Anthropic Claude. To switch providers, open the relevant file in `ai-chatbot/` and comment in the line for the provider you want, commenting out the others. It is a one-line change.
 
-### Using the Chatbot
+Make sure the corresponding API key is present in your `.env` file.
 
-1. Type your legal question in the input field (e.g., "What are renter's rights in Michigan?")
-2. Click "Send" or press Enter
-3. The AI will respond with an explanation in simple 6th-grade English
+---
 
 ## Project Structure
 
 ```
 GrizzHacks8/
-├── MainPage.py              # Flask application & routes
-├── laws.json                # Michigan law database
-├── .env                      # Environment variables (NOT committed to git)
-├── requirements.txt          # Python dependencies
+├── MainPage.py              # Flask app — routes and chat handler
+├── laws.json                # Small set of hard-coded MCL facts (fees, deadlines, form URLs)
+├── requirements.txt         # Python dependencies
+├── .env                     # API keys — not committed
 ├── RUN_INSTRUCTIONS.md      # This file
 ├── Templates/
-│   ├── base.html            # Base HTML template
-│   ├── index.html           # Main chatbot interface
+│   ├── base.html
+│   ├── index.html           # Main page with chat UI
 │   ├── RentersRights.html
 │   ├── small_businesses.html
 │   ├── p_injury.html
 │   └── s_claims.html
-└── ai-chatbot/              # Imported chatbot module
+└── ai-chatbot/              # RAG pipeline over full MCL corpus
+                             # ChromaDB collection not included (>800 MB)
 ```
 
-## Key Features
+**Note on `laws.json`:** This file contains a small number of authoritative figures — filing fees, deposit limits, deadlines, and official SCAO form URLs — injected into the system prompt to prevent the LLM from hallucinating those specifics. It is not the knowledge source for the chat. The ChromaDB collection is.
 
-- **Michigan Legal Context**: The chatbot uses `laws.json` as the source of truth for Michigan law
-- **Simple Language**: All explanations are in 6th-grade English with legal terms defined
-- **Persistent Chat**: Messages are displayed in a scrolling chat window
-- **Responsive UI**: Built with Bootstrap for mobile compatibility
+---
 
 ## Troubleshooting
 
-### "GEMINI_API_KEY not found" Error
+### API key not found
 
-- Check that `.env` file exists in the project root
-- Verify the key name is exactly `GEMINI_API_KEY` (case-sensitive)
-- The `.env` file should look like: `GEMINI_API_KEY=AIzaSy...`
-- Restart the Flask server after adding/modifying `.env`
+- Confirm `.env` exists in the project root (not in a subdirectory)
+- Key names are case-sensitive: `OPENAI_API_KEY`, `GEMINI_API_KEY`, `ANTHROPIC_API_KEY`
+- Restart the Flask server after editing `.env`
 
-### Port Already in Use (Error: Address already in use)
+### ChromaDB collection not found
 
-If port 5000 is already in use, modify `MainPage.py`:
+- The collection must be built locally before the chat feature will work — it is not in the repository
+- Check that the collection path in `ai-chatbot/` matches where you placed the built database
+
+### Port already in use
+
+Modify the last line of `MainPage.py`:
 
 ```python
-if __name__ == "__main__":
-    app.run(debug=True, port=5001)  # Use port 5001 instead
+app.run(debug=True, port=5001)
 ```
 
-### Import Errors
+### Import errors
 
-Run:
 ```bash
 pip install -r requirements.txt
 ```
 
-To ensure all dependencies are installed.
+---
 
-## Development
+## Production Deployment
 
-### Adding New Features
+The Flask development server is not suitable for production. For a production setup:
 
-1. Create a new branch for your feature
-2. Make your changes
-3. Test thoroughly on `http://localhost:5000`
-4. Commit and push your changes
-5. Submit a pull request
+1. Use a WSGI server such as Gunicorn: `gunicorn -w 4 MainPage:app`
+2. Set `debug=False` in `MainPage.py`
+3. Put a reverse proxy (e.g. Nginx) in front of Gunicorn
+4. Manage secrets with a proper secrets manager rather than a `.env` file
 
-### Adding New Laws to the Database
-
-Edit `laws.json` and follow this format:
-
-```json
-{
-  "topic_name": {
-    "property_1": "value",
-    "property_2": "value",
-    "jargon_definition": "Simple explanation of this topic"
-  }
-}
-```
-
-The `get_mi_context()` function in `MainPage.py` automatically formats this data for the AI.
-
-## Deployment
-
-For production deployment, consider:
-
-1. Using a production WSGI server (e.g., Gunicorn)
-2. Setting `debug=False` in Flask
-3. Using environment-specific configurations
-4. Setting up a reverse proxy (e.g., Nginx)
-5. Securing the API key with secrets management
+---
 
 ## Support
 
-For issues or questions, please open a GitHub issue in the repository.
+Open a GitHub issue at [github.com/lcottone-oss/GrizzHacks8](https://github.com/lcottone-oss/GrizzHacks8/issues).
