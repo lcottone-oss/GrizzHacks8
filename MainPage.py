@@ -14,6 +14,7 @@ Attempting to win:
 '''
 import sys
 
+import anthropic
 import chromadb
 from flask import Flask, redirect, url_for, render_template, request, session, jsonify # type: ignore
 import json
@@ -31,11 +32,18 @@ collection = chroma_client.get_collection(
     # metadata={"hnsw:space": "cosine"}
 )
 
-# SERVICE = "openai"
-SERVICE = "gemini"
+SERVICE = "openai"
+# SERVICE = "gemini"
+# SERVICE = "claude"
 openai_client = OpenAI()
 # GEMINI_MODEL = "gemini-3.1-flash-lite-preview"
+claude_client = anthropic.Anthropic()
+
 GEMINI_MODEL = "gemini-2.5-flash-lite"
+
+OPENAI_MODEL = "gpt-4o-mini"
+
+CLAUDE_MODEL = "claude-haiku-4-5"
 
 def database_conn():
     # Load variables from .env
@@ -63,7 +71,7 @@ if GOOGLE_API_KEY:
 else:
     print("WARNING: GOOGLE_API_KEY not found in .env file")
 
-def get_embeddings(texts):
+def get_embeddings(texts:str):
     response = openai_client.embeddings.create(
         input=texts,
         model="text-embedding-3-small"
@@ -91,21 +99,51 @@ def get_mi_context():
     except Exception as e:
         return f"Error loading Michigan laws: {str(e)}"
 
-def ask_gpt(query, system_instruction = "", service = SERVICE):
+def ask_gpt(query, current_chat_logs = None, system_instruction="", service=SERVICE):
+    # Only keep valid conversational roles for all services
+    messages = []
+    reply = ""
+    if current_chat_logs:
+        for log in current_chat_logs:
+            role = str(log.get("role"))
+            content = log.get("content")
+            if role in ("user", "assistant"):
+                messages.append({"role": role, "content": content})
+    else:
+        current_chat_logs = []
+    messages.append({"role": "user", "content": query})
+
     if service == "gemini":
+        role_map = {"assistant": "model", "user": "user"}
+        gemini_messages = [
+            {"role": role_map.get(msg["role"], msg["role"]), "parts": [{"text": msg["content"]}]}
+            for msg in messages
+        ]
         model = genai.GenerativeModel(GEMINI_MODEL, system_instruction=system_instruction)
-        response = model.generate_content(query)
-        return response.text
+        response = model.generate_content(gemini_messages)
+        reply = response.text
+
     elif service == "openai":
+        openai_messages = []
+        if system_instruction:
+            openai_messages.append({"role": "system", "content": system_instruction})
+        openai_messages += messages
         response = openai_client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": system_instruction},
-                {"role": "user", "content": query}
-            ]
+            model=OPENAI_MODEL,
+            messages=openai_messages
         )
-        return response.choices[0].message.content
-    pass
+        reply = response.choices[0].message.content
+
+    elif service == "claude":
+        message = claude_client.messages.create(
+            model="claude-opus-4-6",
+            max_tokens=1024,
+            system=system_instruction,
+            messages=messages,
+        )
+        reply = message.content[0].text
+
+    return reply
 
 def search_michigan_cases(query):
     """
@@ -276,7 +314,7 @@ def chat():
         with open("chat_logs.txt", "w") as log_file:
             log_file.write(f"\n\nrag_query:\n{response}\n\n")
 
-        query_embedding = get_embeddings([response])[0]
+        query_embedding = get_embeddings(response)[0]
 
         results = collection.query(
             query_embeddings=[query_embedding],
@@ -350,20 +388,22 @@ def chat():
         if cases_context:
             system_instruction += f"\n\n{cases_context}\nInclude information about these Michigan court cases and explain them in simple terms."
 
-        if current_chat_logs:
-            system_instruction += "\n\nCurrent conversation:\n"
-            for log in current_chat_logs:
-                role = str(log.get("role"))
-                content = log.get("content")
-                system_instruction += f"{role.title()}: {content}\n"
+        # if current_chat_logs:
+        #     system_instruction += "\n\nCurrent conversation:\n"
+        #     for log in current_chat_logs:
+        #         role = str(log.get("role"))
+        #         content = log.get("content")
+        #         system_instruction += f"{role.title()}: {content}\n"
 
         # model = genai.GenerativeModel(
         #     GEMINI_MODEL,
         #     system_instruction=system_instruction
         # )
-        response = ask_gpt(user_message, system_instruction=system_instruction)
-        with open("chat_logs.txt", "a") as log_file:
-            log_file.write(f"\n\nMCL Context:\n{mcl_context}\n\n")
+        response = ask_gpt(user_message, current_chat_logs=current_chat_logs, system_instruction=system_instruction)
+        current_chat_logs.append({"role": "user", "content": user_message})
+        current_chat_logs.append({"role": "assistant", "content": response})
+        # with open("chat_logs.txt", "w") as log_file:
+        #     log_file.write(f"\n\Chat Context:\n{current_chat_logs}\n\n")
         return jsonify({
             "response":           response,
             "retrieved_sections": retrieved_sections
