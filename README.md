@@ -24,7 +24,7 @@ The chat window is backed by a full retrieval-augmented generation (RAG) pipelin
 **How it works:**
 
 1. The user submits a question in natural language.
-2. Before retrieval, an LLM rewrites the query into a form closer to how the answer would be phrased in statute — this improves retrieval quality by bridging the vocabulary gap between casual questions and legal text.
+2. Before retrieval, the full conversation history is sent to an LLM, which synthesizes it into a single self-contained query. **This is necessary because embedding only the latest message loses context ("What should I do?" means nothing without the prior turn), while embedding the entire chat history introduces noise that pulls retrieved chunks off-topic. The LLM-condensed query gives the embedding model a focused, complete query to work with.**
 3. The rewritten query is embedded using the OpenAI embeddings API (`text-embedding-3-small`).
 4. The embedding is used to query a local ChromaDB collection, which stores pre-computed embeddings for every section of the MCL. ChromaDB's built-in approximate nearest neighbor (ANN) algorithm identifies the most semantically relevant chunks.
 5. A dynamic number of retrieved chunks are assembled into a context window and sent to the LLM, which generates a final answer constrained to those sources.
