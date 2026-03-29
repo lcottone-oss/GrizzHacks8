@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>{% block title %}Mitten Mentor - Michigan Legal Help{% endblock %}</title>
+  <title>{% block title %}Civix - Michigan Legal Help{% endblock %}</title>
   
 
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
@@ -22,6 +22,7 @@
       font-family: 'Playfair Display', serif;
       font-weight: 700;
       letter-spacing: -0.5px;
+      color: #000000;
     }
 
     /* Modern Judicial Theme Colors */
@@ -35,8 +36,8 @@
     }
 
     body {
-      background-color: var(--limestone);
-      color: var(--charcoal);
+      background-color: #c8e7e1;
+      color: #2C2C2C;
       padding-top: 70px;
       position: relative;
       overflow-x: hidden;
@@ -53,10 +54,11 @@ body::before {
   background-repeat: no-repeat;
   background-position: center;
   background-size: 1500px;
-  opacity: 0.12;
+  opacity: 0.15;
   pointer-events: none;
-  z-index: -1;
-  animation: spinCivix 35s linear infinite;
+  z-index: 0;
+  animation: spinLogo 35s linear infinite;
+  filter: sepia(0.8) brightness(1.3) hue-rotate(30deg);
 }
 
 .page-animate {
@@ -143,7 +145,7 @@ body::before {
 }
 nav, main, .container {
   position: relative;
-  z-index: 1;
+  z-index: 2;
 }
 
     
@@ -168,8 +170,9 @@ nav, main, .container {
 
     .nav-link {
       color: var(--navbar-text) !important;
+      font-family: 'Playfair Display', serif;
       font-weight: 600;
-      font-size: 14px;
+      font-size: 22px;
       letter-spacing: 0.5px;
       transition: color 0.3s ease, border-bottom 0.3s ease;
       position: relative;
@@ -193,6 +196,10 @@ nav, main, .container {
 
     .nav-link:hover {
       color: var(--accent-gold) !important;
+    }
+
+    .text-muted {
+      color: #000000 !important;
     }
 
     .navbar-toggler-icon {
@@ -239,7 +246,7 @@ nav, main, .container {
   </button>
 
   <div class="collapse navbar-collapse" id="navbarSupportedContent">
-    <ul class="navbar-nav mr-auto">
+    <ul class="navbar-nav mx-auto">
 
       <li class="nav-item">
         <a class="nav-link" href="/">Home</a>
@@ -253,39 +260,12 @@ nav, main, .container {
         <a class="nav-link" href="/Small_Businesses">Small Businesses</a>
       </li>
 
-      <!--  PERSONAL INJURY DROPDOWN -->
-      <li class="nav-item dropdown">
-        <a class="nav-link dropdown-toggle"
-           href="#"
-           id="injuryDropdown"
-           role="button"
-           data-toggle="dropdown"
-           aria-haspopup="true"
-           aria-expanded="false">
-          Personal Injury
-        </a>
-        <div class="dropdown-menu" aria-labelledby="injuryDropdown">
-          <a class="dropdown-item" href="/Personal_Injury">Auto Accidents</a>
-          <a class="dropdown-item" href="/Personal_Injury">Slip & Fall</a>
-          <a class="dropdown-item" href="/Personal_Injury">Workplace Injuries</a>
-        </div>
+      <li class="nav-item">
+        <a class="nav-link" href="/Personal_Injury">Personal Injury</a>
       </li>
 
-      <!--  SMALL CLAIMS DROPDOWN -->
-      <li class="nav-item dropdown">
-        <a class="nav-link dropdown-toggle"
-           href="/Small_Claims"
-           id="claimsDropdown"
-           role="button"
-           data-toggle="dropdown"
-           aria-haspopup="true"
-           aria-expanded="false">
-          Small Claims
-        </a>
-        <div class="dropdown-menu" aria-labelledby="claimsDropdown">
-          <a class="dropdown-item" href="/Small_Claims">Filing a Claim</a>
-          <a class="dropdown-item" href="/Small_Claims">Court Process</a>
-        </div>
+      <li class="nav-item">
+        <a class="nav-link" href="/Small_Claims">Small Claims</a>
       </li>
 
     </ul>

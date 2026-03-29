@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}Topics - Civixs{% endblock %}
+
+{% block extra_head %}
+<link href="https://cdn.tailwindcss.com" rel="stylesheet">
+<style>
+    h1, h2, h3 {
+        font-family: 'Playfair Display', serif;
+    }
+    
+    .card-hover {
+        transition: all 0.3s ease;
+    }
+    
+    .card-hover:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 12px 32px rgba(0, 26, 77, 0.2);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bg-white min-h-screen">
+    <!-- Hero -->
+    <div style="background: linear-gradient(135deg, #001a4d 0%, #003d99 100%);" class="text-white py-24">
+        <div class="max-w-6xl mx-auto px-4 text-center">
+            <h1 class="text-5xl font-bold mb-4">Michigan Legal Topics</h1>
+            <p class="text-xl opacity-90">Find legal information, resources, and expert guidance</p>
+        </div>
+    </div>
+
+    <!-- Topics Grid -->
+    <div class="max-w-6xl mx-auto px-4 py-16">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {% for topic in topics %}
+            <a href="/topic/{{ topic.category }}" class="card-hover bg-white border-2" style="border-color: #001a4d;" class="rounded-lg p-8 shadow-md hover:shadow-xl">
+                <div class="flex items-start">
+                    <div class="text-5xl mr-6">
+                        {% if topic.category == 'renters_rights' %}🏠
+                        {% elif topic.category == 'small_claims' %}⚖️
+                        {% elif topic.category == 'personal_injury' %}🚗
+                        {% elif topic.category == 'small_business' %}💼
+                        {% else %}📋{% endif %}
+                    </div>
+                    <div class="flex-1">
+                        <h2 class="text-2xl font-bold mb-3" style="color: #001a4d;">{{ topic.title }}</h2>
+                        <p class="text-gray-700 mb-4">{{ topic.description }}</p>
+                        <div class="text-sm" style="color: #001a4d;">{{ topic.subtopics|length }} subtopics covered →</div>
+                    </div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
