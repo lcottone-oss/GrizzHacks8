@@ -108,8 +108,6 @@ The RAG pipeline requires the pre-embedded MCL collection to be present locally.
 3. Embed each chunk using `text-embedding-3-small`
 4. Store the embeddings in a ChromaDB persistent collection
 
-Refer to the scripts in `ai-chatbot/` for the embedding and ingestion pipeline.
-
 ### Run
 
 ```bash
