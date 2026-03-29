@@ -32,8 +32,8 @@ collection = chroma_client.get_collection(
     # metadata={"hnsw:space": "cosine"}
 )
 
-SERVICE = "openai"
-# SERVICE = "gemini"
+# SERVICE = "openai"
+SERVICE = "gemini"
 # SERVICE = "claude"
 openai_client = OpenAI()
 # GEMINI_MODEL = "gemini-3.1-flash-lite-preview"
