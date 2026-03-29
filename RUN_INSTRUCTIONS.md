@@ -75,7 +75,7 @@ Running on http://127.0.0.1:5000
 
 ## Switching LLM Providers
 
-The chat backend supports OpenAI, Google Gemini, and Anthropic Claude. To switch providers, open the relevant file in `ai-chatbot/` and comment in the line for the provider you want, commenting out the others. It is a one-line change.
+The chat backend supports OpenAI, Google Gemini, and Anthropic Claude. To switch providers, open `MainPage.py` and go to lines 42–44 — comment in the line for the provider you want and comment out the others. It is a one-line change.
 
 Make sure the corresponding API key is present in your `.env` file.
 
