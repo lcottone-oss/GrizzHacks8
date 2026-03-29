@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+{% block title %}Case Law Search - Mitten Mentor{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* Case Folder Container */
+    .case-folder-container {
+        max-width: 1000px;
+        margin: 60px auto;
+        padding: 20px;
+    }
+
+    .case-folder-section-title {
+        font-size: 2rem;
+        color: var(--charcoal);
+        margin-bottom: 40px;
+        text-align: center;
+        font-family: 'Playfair Display', serif;
+    }
+
+    .case-folders-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        gap: 30px;
+        margin-bottom: 60px;
+    }
+
+    /* Manila Folder Style */
+    .case-folder {
+        position: relative;
+        background: linear-gradient(135deg, #E6BE8A 0%, #D4A574 100%);
+        border: 2px solid #8B7355;
+        border-radius: 4px;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        overflow: hidden;
+        min-height: 280px;
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .case-folder:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    }
+
+    /* Tab on folder */
+    .case-folder::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 16px;
+        width: 140px;
+        height: 24px;
+        background: linear-gradient(to bottom, #D4A574, #C99A60);
+        border: 1px solid #8B7355;
+        border-bottom: none;
+        border-radius: 4px 4px 0 0;
+    }
+
+    /* Certified Stamp */
+    .case-folder::after {
+        content: '⚖️\ACERTIFIED';
+        position: absolute;
+        top: 40px;
+        right: 16px;
+        font-size: 11px;
+        font-weight: bold;
+        color: rgba(139, 115, 85, 0.3);
+        text-align: center;
+        transform: rotate(-15deg);
+        letter-spacing: 1px;
+        white-space: nowrap;
+    }
+
+    /* Folder content */
+    .case-info {
+        position: relative;
+        z-index: 2;
+        color: #3E2723;
+    }
+
+    .case-name {
+        font-size: 1.4rem;
+        font-weight: 700;
+        margin-bottom: 12px;
+        color: #2C1810;
+        font-family: 'Playfair Display', serif;
+        line-height: 1.3;
+    }
+
+    .case-citation {
+        font-size: 12px;
+        font-weight: 600;
+        background: rgba(255, 255, 255, 0.5);
+        padding: 4px 8px;
+        border-left: 3px solid #8B4513;
+        margin-bottom: 12px;
+        font-family: monospace;
+        color: #3E2723;
+    }
+
+    .case-meta {
+        font-size: 13px;
+        color: #5D4037;
+        margin-bottom: 16px;
+        line-height: 1.6;
+    }
+
+    .case-meta-item {
+        display: flex;
+        margin-bottom: 6px;
+    }
+
+    .case-meta-label {
+        font-weight: 600;
+        min-width: 70px;
+    }
+
+    .case-snippet {
+        font-size: 14px;
+        color: #3E2723;
+        line-height: 1.6;
+        margin-bottom: 16px;
+        padding: 12px;
+        background: rgba(255, 255, 255, 0.3);
+        border-radius: 4px;
+        flex-grow: 1;
+        font-style: italic;
+    }
+
+    .case-actions {
+        display: flex;
+        gap: 12px;
+        margin-top: auto;
+        flex-wrap: wrap;
+    }
+
+    .case-btn {
+        padding: 8px 16px;
+        background: #8B4513;
+        color: #FFF5E6;
+        border: 1px solid #5D2E0F;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 600;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        display: inline-block;
+        text-align: center;
+    }
+
+    .case-btn:hover {
+        background: #A0522D;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .case-btn-primary {
+        background: #D4AF37;
+        color: var(--charcoal);
+        border-color: #C4941F;
+    }
+
+    .case-btn-primary:hover {
+        background: #E6C547;
+    }
+
+    /* Empty state */
+    .no-cases {
+        text-align: center;
+        padding: 60px 20px;
+        color: var(--legal-gray);
+    }
+
+    .no-cases h3 {
+        font-size: 1.5rem;
+        margin-bottom: 12px;
+    }
+
+    @media (max-width: 768px) {
+        .case-folders-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .case-name {
+            font-size: 1.2rem;
+        }
+
+        .case-folder::after {
+            font-size: 9px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="case-folder-container">
+    <h1 class="case-folder-section-title">📋 Michigan Case Law</h1>
+
+    {% if cases %}
+    <div class="case-folders-grid">
+        {% for case in cases %}
+        <div class="case-folder">
+            <div class="case-info">
+                <div class="case-name">{{ case.caseName }}</div>
+                <div class="case-citation">{{ case.citation }}</div>
+                
+                <div class="case-meta">
+                    <div class="case-meta-item">
+                        <span class="case-meta-label">Court:</span>
+                        <span>{{ case.court }}</span>
+                    </div>
+                    <div class="case-meta-item">
+                        <span class="case-meta-label">Date:</span>
+                        <span>{{ case.date_filed }}</span>
+                    </div>
+                </div>
+
+                <div class="case-snippet">
+                    "{{ case.snippet[:250] }}..."
+                </div>
+
+                <div class="case-actions">
+                    {% if case.url %}
+                    <a href="{{ case.url }}" target="_blank" class="case-btn case-btn-primary">
+                        View Full Case →
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="no-cases">
+        <h3>📂 No Case Law Found</h3>
+        <p>Try searching for a different topic or check back later.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
