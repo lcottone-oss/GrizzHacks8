@@ -31,8 +31,11 @@ collection = chroma_client.get_collection(
     # metadata={"hnsw:space": "cosine"}
 )
 
+# SERVICE = "openai"
+SERVICE = "gemini"
 openai_client = OpenAI()
-GEMINI_MODEL = "gemini-3.1-flash-lite-preview"
+# GEMINI_MODEL = "gemini-3.1-flash-lite-preview"
+GEMINI_MODEL = "gemini-2.5-flash-lite"
 
 def database_conn():
     # Load variables from .env
@@ -87,6 +90,22 @@ def get_mi_context():
         return context
     except Exception as e:
         return f"Error loading Michigan laws: {str(e)}"
+
+def ask_gpt(query, system_instruction = "", service = SERVICE):
+    if service == "gemini":
+        model = genai.GenerativeModel(GEMINI_MODEL, system_instruction=system_instruction)
+        response = model.generate_content(query)
+        return response.text
+    elif service == "openai":
+        response = openai_client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": system_instruction},
+                {"role": "user", "content": query}
+            ]
+        )
+        return response.choices[0].message.content
+    pass
 
 def search_michigan_cases(query):
     """
@@ -245,21 +264,19 @@ def chat():
             rag_query += f"\n\n{user_message}\n"
         else:
             rag_query = user_message
-        model = genai.GenerativeModel(
-            GEMINI_MODEL,
-            system_instruction='''Rewrite a concise summarized version of the user's message.
-            This summary will be used to retrieve relevant Michigan laws, so include key details and context that would help identify applicable statutes.
-            Do not include any information that is not directly relevant to the legal issue at hand.
-            Do not include any information not provided by the user.
-            The summary should be clear and focused on the user's legal problem.
-            If there are multiple disjoint cases, keep ONLY the latest one.'''
-        )
-        response = model.generate_content(rag_query)
 
-        # with open("chat_logs.txt", "w") as log_file:
-            # log_file.write(f"\n\nrag_query:\n{response.text}\n\n")
+        system_instruction='''Rewrite a concise summarized version of the user's message.
+        This summary will be used to retrieve relevant Michigan laws, so include key details and context that would help identify applicable statutes.
+        Do not include any information that is not directly relevant to the legal issue at hand.
+        Do not include any information not provided by the user.
+        The summary should be clear and focused on the user's legal problem.
+        If there are multiple disjoint cases, keep ONLY the latest one.'''
+        response = ask_gpt(rag_query, system_instruction=system_instruction)
 
-        query_embedding = get_embeddings([response.text])[0]
+        with open("chat_logs.txt", "w") as log_file:
+            log_file.write(f"\n\nrag_query:\n{response}\n\n")
+
+        query_embedding = get_embeddings([response])[0]
 
         results = collection.query(
             query_embeddings=[query_embedding],
@@ -340,36 +357,17 @@ def chat():
                 content = log.get("content")
                 system_instruction += f"{role.title()}: {content}\n"
 
-        model = genai.GenerativeModel(
-            GEMINI_MODEL,
-            system_instruction=system_instruction
-        )
-        response = model.generate_content(user_message)
-        current_chat_logs.append({"role": "user", "content": user_message})
-        current_chat_logs.append({"role": "model", "content": response.text})
-        # with open("chat_logs.txt", "a") as log_file:
-        #     log_file.write(f"\n\nMCL Context:\n{mcl_context}\n\n")
+        # model = genai.GenerativeModel(
+        #     GEMINI_MODEL,
+        #     system_instruction=system_instruction
+        # )
+        response = ask_gpt(user_message, system_instruction=system_instruction)
+        with open("chat_logs.txt", "a") as log_file:
+            log_file.write(f"\n\nMCL Context:\n{mcl_context}\n\n")
         return jsonify({
-            "response":           response.text,
+            "response":           response,
             "retrieved_sections": retrieved_sections
         }), 200
-
-
-        # response = openai_client.chat.completions.create(
-        #     model="gpt-4o-mini",
-        #     messages=[
-        #         {"role": "system", "content": system_instruction},
-        #         {"role": "user", "content": user_message}
-        #     ]
-        # )
-        # current_chat_logs.append({"role": "user", "content": user_message})
-        # current_chat_logs.append({"role": "assistant", "content": response.choices[0].message.content})
-        # # with open("chat_logs.txt", "w") as log_file:
-        # #     log_file.write(f"\n\nChat logs:\n{current_chat_logs}\n\n")
-        # return jsonify({
-        #     "response":           response.choices[0].message.content,
-        #     "retrieved_sections": retrieved_sections
-        # }), 200
 
     except Exception as e:
         return jsonify({"error": f"Error processing request: {str(e)}"}), 500
