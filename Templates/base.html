@@ -47,16 +47,17 @@
 body::before {
   content: "";
   position: fixed;
-  inset: -20%; /* makes it bigger than the screen */
-  background-image: url("{{ url_for('static', filename='images/civix_black.png') }}");
+  inset: -40%;
+  background-image: url("{{ url_for('static', filename='images/civix_bg.png') }}");
   background-repeat: no-repeat;
   background-position: center;
-  background-size: 900px;   /* 🔴 MUCH BIGGER */
-  opacity: 0.12;            /* 🔴 MORE VISIBLE */
+  background-size: 1500px;
+  opacity: 0.12;
   pointer-events: none;
   z-index: -1;
-  animation: spinLogo 20s linear infinite; /* 🔴 FASTER */
+  animation: spinCivix 35s linear infinite;
 }
+
 .page-animate {
   animation: fadeSlideIn 0.8s ease-out both;
 }
@@ -222,6 +223,7 @@ nav, main, .container {
 
 <body>
 
+
 <!--  NAVBAR (Modern Judicial) -->
 <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
   <a class="navbar-brand" href="/">Civix</a>
@@ -302,4 +304,5 @@ nav, main, .container {
 
 </body>
 </html>
+
 
