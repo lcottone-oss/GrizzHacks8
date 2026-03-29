@@ -33,8 +33,8 @@ collection = chroma_client.get_collection(
 )
 
 # SERVICE = "openai"
-SERVICE = "gemini"
-# SERVICE = "claude"
+# SERVICE = "gemini"
+SERVICE = "claude"
 openai_client = OpenAI()
 # GEMINI_MODEL = "gemini-3.1-flash-lite-preview"
 claude_client = anthropic.Anthropic()
@@ -43,7 +43,7 @@ GEMINI_MODEL = "gemini-2.5-flash-lite"
 
 OPENAI_MODEL = "gpt-4o-mini"
 
-CLAUDE_MODEL = "claude-haiku-4-5"
+CLAUDE_MODEL = "claude-sonnet-4-6"
 
 current_chat_logs = [{}]
 

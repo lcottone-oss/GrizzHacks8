@@ -605,6 +605,7 @@
         const userMessage = document.createElement('div');
         userMessage.className = 'user-message';
         userMessage.textContent = userInput;
+        userMessage.dataset.raw = userInput;
         chatWindow.appendChild(userMessage);
 
         document.getElementById('userInput').value = '';
@@ -645,6 +646,7 @@
             assistantMessage.className = 'assistant-message';
             const responseText = data.response || data.error || 'No response received';
             assistantMessage.innerHTML = formatChatMessage(responseText);
+            assistantMessage.dataset.raw = responseText;
             chatWindow.appendChild(assistantMessage);
             chatWindow.scrollTop = chatWindow.scrollHeight;
         })
@@ -661,24 +663,25 @@
 
     function exportChat() {
         const messages = document.querySelectorAll('#chatWindow .user-message, #chatWindow .assistant-message');
-        if (messages.length <= 1) return; // only welcome message, nothing to export
+        if (messages.length <= 1) return;
 
-        let output = 'Mitten Mentor — Chat Export\n';
-        output += new Date().toLocaleString() + '\n';
-        output += '='.repeat(40) + '\n\n';
+        let output = '# Mitten Mentor — Chat Export\n';
+        output += `*${new Date().toLocaleString()}*\n\n`;
+        output += '---\n\n';
 
         messages.forEach(msg => {
-            const role = msg.classList.contains('user-message') ? 'You' : 'Mitten Mentor';
-            output += `${role}:\n${msg.innerText}\n\n`;
+            const isUser = msg.classList.contains('user-message');
+            const role = isUser ? '### 🧑 You' : '### ⚖️ Mitten Mentor';
+            const text = msg.dataset.raw || msg.innerText;
+            output += `${role}\n\n${text}\n\n---\n\n`;
         });
 
-        const blob = new Blob([output], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
+        const blob = new Blob([output], { type: 'text/markdown' });
         const a = document.createElement('a');
-        a.href = url;
-        a.download = `mitten-mentor-${Date.now()}.txt`;
+        a.href = URL.createObjectURL(blob);
+        a.download = `mitten-mentor-${Date.now()}.md`;
         a.click();
-        URL.revokeObjectURL(url);
+        URL.revokeObjectURL(a.href);
     }
 
     // Scroll-triggered animations
