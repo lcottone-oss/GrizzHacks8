@@ -116,7 +116,7 @@ GrizzHacks8/
 ### ChromaDB collection not found
 
 - The collection must be built locally before the chat feature will work — it is not in the repository
-- Check that the collection path in `ai-chatbot/` matches where you placed the built database
+- Check that the collection path in `MainPage.py` matches where you placed the built database — the expected path is `mcl_chroma_db`
 
 ### Port already in use
 
