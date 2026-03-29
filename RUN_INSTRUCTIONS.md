@@ -97,8 +97,8 @@ GrizzHacks8/
 │   ├── small_businesses.html
 │   ├── p_injury.html
 │   └── s_claims.html
-└── ai-chatbot/              # RAG pipeline over full MCL corpus
-                             # ChromaDB collection not included (>800 MB)
+└── mcl_chroma_db/              # RAG pipeline over full MCL corpus
+                             # ChromaDB collection not committed (>800 MB)
 ```
 
 **Note on `laws.json`:** This file contains a small number of authoritative figures — filing fees, deposit limits, deadlines, and official SCAO form URLs — injected into the system prompt to prevent the LLM from hallucinating those specifics. It is not the knowledge source for the chat. The ChromaDB collection is.
