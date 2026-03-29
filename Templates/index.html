@@ -409,6 +409,13 @@
             height: 60px;
         }
     }
+    @keyframes thinking {
+        0%, 100% { opacity: 0.3; }
+        50% { opacity: 1; }
+    }
+    .thinking {
+        animation: thinking 1.4s ease-in-out infinite;
+    }
 </style>
 {% endblock %}
 
@@ -591,11 +598,20 @@
         document.getElementById('userInput').value = '';
 
         const loadingMsg = document.createElement('div');
-        loadingMsg.className = 'assistant-message';
+        loadingMsg.className = 'assistant-message thinking';
         loadingMsg.id = 'loadingMsg';
         loadingMsg.textContent = 'Thinking...';
         chatWindow.appendChild(loadingMsg);
         chatWindow.scrollTop = chatWindow.scrollHeight;
+
+        // Animate the dots while waiting
+        const dots = ['Thinking.', 'Thinking..', 'Thinking...'];
+        let dotIndex = 0;
+        const dotInterval = setInterval(() => {
+            dotIndex = (dotIndex + 1) % dots.length;
+            const msg = document.getElementById('loadingMsg');
+            if (msg) msg.textContent = dots[dotIndex];
+        }, 500);
 
         // Send to backend
         fetch('/chat', {
@@ -610,6 +626,7 @@
         })
         .then(response => response.json())
         .then(data => {
+            clearInterval(dotInterval);
             const loading = document.getElementById('loadingMsg');
             if (loading) loading.remove();
             const assistantMessage = document.createElement('div');
