@@ -42,37 +42,109 @@
     }
 
     /* Legal Seal Watermark */
-    body::before {
-      content: '';
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 400px;
-      height: 400px;
-      background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><defs><style>.seal{fill:none;stroke:%232a2a2a;stroke-width:1.5;opacity:0.02;}<\/style></defs><circle cx="100" cy="100" r="95" class="seal"/><circle cx="100" cy="100" r="85" class="seal"/><path d="M100,20 L140,80 L190,70 L150,110 L170,160 L110,130 L60,170 L80,110 L30,70 L100,90 Z" class="seal"/><text x="100" y="185" text-anchor="middle" class="seal" font-size="12" font-family="serif">LEGAL SEAL</text></svg>');
-      background-repeat: no-repeat;
-      background-position: center;
-      background-size: contain;
-      pointer-events: none;
-      z-index: 0;
-    }
+    /* === Spinning Background Logo === */
+/* === SPINNING BACKGROUND LOGO (VISIBLE VERSION) === */
+body::before {
+  content: "";
+  position: fixed;
+  inset: -20%; /* makes it bigger than the screen */
+  background-image: url("{{ url_for('static', filename='images/civix_black.png') }}");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 900px;   /* 🔴 MUCH BIGGER */
+  opacity: 0.12;            /* 🔴 MORE VISIBLE */
+  pointer-events: none;
+  z-index: -1;
+  animation: spinLogo 20s linear infinite; /* 🔴 FASTER */
+}
+.page-animate {
+  animation: fadeSlideIn 0.8s ease-out both;
+}
 
-    /* Limestone texture overlay */
-    body::after {
-      content: '';
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-image: 
-        radial-gradient(circle at 20% 50%, rgba(255,255,255,0.1) 1px, transparent 1px),
-        radial-gradient(circle at 80% 80%, rgba(0,0,0,0.05) 1px, transparent 1px);
-      background-size: 50px 50px;
-      pointer-events: none;
-      z-index: 0;
-    }
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.card {
+  transition:
+    transform 0.35s ease,
+    box-shadow 0.35s ease;
+}
+
+.card:hover {
+  transform: translateY(-10px);
+  box-shadow:
+    0 20px 40px rgba(0, 0, 0, 0.2),
+    0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+
+.card {
+  opacity: 0;
+  animation: cardReveal 0.8s ease forwards;
+}
+
+.card:nth-child(1) { animation-delay: 0.1s; }
+.card:nth-child(2) { animation-delay: 0.25s; }
+.card:nth-child(3) { animation-delay: 0.4s; }
+.card:nth-child(4) { animation-delay: 0.55s; }
+
+@keyframes cardReveal {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+}
+
+.btn {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+}
+
+.btn:active {
+  transform: translateY(1px);
+  box-shadow: none;
+}
+
+.float-soft {
+  animation: floatSoft 6s ease-in-out infinite;
+}
+
+@keyframes floatSoft {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+  100% { transform: translateY(0px); }
+}
+
+/* CLEAR, OBSERVABLE SPIN */
+@keyframes spinLogo {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+nav, main, .container {
+  position: relative;
+  z-index: 1;
+}
+
+    
 
     /* Navbar Styling */
     nav {
@@ -152,7 +224,7 @@
 
 <!--  NAVBAR (Modern Judicial) -->
 <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
-  <a class="navbar-brand" href="/">Civixs</a>
+  <a class="navbar-brand" href="/">Civix</a>
 
   <button class="navbar-toggler" type="button"
           data-toggle="collapse"
@@ -230,3 +302,4 @@
 
 </body>
 </html>
+
