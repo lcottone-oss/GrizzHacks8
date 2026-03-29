@@ -41,7 +41,20 @@
       <div class="card h-100 shadow-sm">
         <div class="card-body">
           <h5 class="card-title">Extra Resources</h5>
-                {%print(data)%}
+                {% for item in data %}
+                  <p>
+                    <strong>Affordable Rental Housing Directory:</strong>
+                    <a href="{{ item.AffordableRentalHousingDirectory }}">
+                      {{ item.AffordableRentalHousingDirectory }}
+                    </a>
+                  </p>
+                  <p>
+                      <strong>Michigan Housing Locator:</strong>
+                      <a href="{{ item.MichiganHousingLocator }}">
+                        {{ item.MichiganHousingLocator }}
+                      </a>
+                    </p>
+                {% endfor %}
         </div>
       </div>
     </div>

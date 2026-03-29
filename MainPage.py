@@ -13,7 +13,8 @@ Attempting to win:
     Best use of Gemini API
 '''
 import sys
-
+print(sys.executable)
+#from bson import ObjectId
 import anthropic
 import chromadb
 from flask import Flask, redirect, url_for, render_template, request, session, jsonify # type: ignore
@@ -24,9 +25,6 @@ import google.generativeai as genai
 import os
 from openai import OpenAI
 from pymongo import MongoClient
-<<<<<<< HEAD
-from bson import ObjectId
-=======
 import requests
 
 chroma_client = chromadb.PersistentClient(path="./mcl_chroma_db")
@@ -35,8 +33,8 @@ collection = chroma_client.get_collection(
     # metadata={"hnsw:space": "cosine"}
 )
 
-SERVICE = "openai"
-# SERVICE = "gemini"
+# SERVICE = "openai"
+SERVICE = "gemini"
 # SERVICE = "claude"
 openai_client = OpenAI()
 # GEMINI_MODEL = "gemini-3.1-flash-lite-preview"
@@ -49,7 +47,7 @@ OPENAI_MODEL = "gpt-4o-mini"
 CLAUDE_MODEL = "claude-haiku-4-5"
 
 current_chat_logs = [{}]
->>>>>>> 56c48d863250895e485530d31613dd6af75598f2
+
 
 def database_conn():
     # Load variables from .env
@@ -423,10 +421,8 @@ def chat():
 
 @app.route("/Renters_Rights")
 def renters_rights():
+    print(list(db.RentersRights.find()))
     data1 = list(db.RentersRights.find())
-    parse_list = []
-    for item in data1:
-        parse_list.append(item['AffordableRentalHousingDirectory'])
     return render_template("RentersRights.html", data = data1)
 
 @app.route("/Small_Businesses")
