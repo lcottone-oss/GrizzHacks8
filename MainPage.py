@@ -193,7 +193,7 @@ Answer the user's question clearly and helpfully."""
             system_instruction += f"\n\nUser's location: Michigan zip code {zip_code}"
         
         # Initialize Gemini model
-        model = genai.GenerativeModel("gemini-2.5-flash", system_instruction=system_instruction)
+        model = genai.GenerativeModel("gemini-2.5-flash-lite", system_instruction=system_instruction)
         
         # Send message to Gemini and get response
         response = model.generate_content(user_message)
