@@ -232,8 +232,7 @@ def chat():
         if not user_message:
             return jsonify({"error": "No message provided"}), 400
 
-        # ── 1. Retrieve relevant MCL sections from ChromaDB ──────────────────
-        query_embedding = get_embeddings([user_message])[0]  # OpenAI for embedding only
+        query_embedding = get_embeddings([user_message])[0]
 
         results = collection.query(
             query_embeddings=[query_embedding],
@@ -252,7 +251,6 @@ def chat():
             if dist <= 0.60
         ]
 
-        # Adaptive cutoff with minimum 3 sections
         MIN_RESULTS = 3
         if candidates:
             filtered = [candidates[0]]
@@ -264,7 +262,6 @@ def chat():
         else:
             filtered = []
 
-        # ── 2. Build MCL context ──────────────────────────────────────────────
         mcl_context = ""
         retrieved_sections = []
 
@@ -280,7 +277,6 @@ def chat():
                     "distance":   round(dist, 4)
                 })
 
-        # ── 3. Check for case law questions ───────────────────────────────────
         case_keywords = ["judge say", "judges say", "happened before", "case", "ruling",
                          "precedent", "court decision", "what do lawyers"]
         is_case_question = any(kw in user_message.lower() for kw in case_keywords)
@@ -291,7 +287,6 @@ def chat():
             if cases:
                 cases_context = format_cases_context(cases)
 
-        # ── 4. Build Gemini system instruction ───────────────────────────────
         system_instruction = (
             "You are a Michigan legal helper. "
             "Explain everything in 6th-grade English. "
@@ -309,7 +304,6 @@ def chat():
         if zip_code:
             system_instruction += f"\n\nUser's location: Michigan zip code {zip_code}."
 
-        # ── 5. Call Gemini ────────────────────────────────────────────────────
         model = genai.GenerativeModel(
             "gemini-2.5-flash-lite",
             system_instruction=system_instruction
