@@ -487,12 +487,7 @@ def chat():
         return jsonify({"error": f"Error processing request: {str(e)}"}), 500
 @app.route("/Renters_Rights")
 def renters_rights():
-<<<<<<< HEAD
-    print(list(db.RentersRights.find()))
-    data1 = list(db.RentersRights.find())
-=======
     data1 = list(mongo_db.RentersRights.find())
->>>>>>> 7dafcee656ef8bf4a1e14148c10fa748b2677638
     return render_template("RentersRights.html", data = data1)
 
 @app.route("/Small_Businesses")
