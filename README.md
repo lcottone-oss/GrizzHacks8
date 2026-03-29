@@ -24,7 +24,8 @@ The chat window is backed by a full retrieval-augmented generation (RAG) pipelin
 **How it works:**
 
 1. The user submits a question in natural language.
-2. Before retrieval, the full conversation history is sent to an LLM, which synthesizes it into a single self-contained query. **This is necessary because embedding only the latest message loses context ("What should I do?" means nothing without the prior turn), while embedding the entire chat history introduces noise that pulls retrieved chunks off-topic. The LLM-condensed query gives the embedding model a focused, complete query to work with.**
+2. Before retrieval, the full conversation history is sent to an LLM, which synthesizes it into a single self-contained query. **Why not just embed the latest message or the full chat history?**
+   > If the user says "I got hit by a car" in one message, then "What should I do?" in the next — embedding only the latest message gives the embedding model almost nothing to work with, and retrieval quality tanks. But embedding the full chat history isn't the answer either — the vector ends up with too much noise, and irrelevant chunks get pulled in. So instead, the full history is sent to an LLM first, which distills it into a single clean query, and that query is what gets embedded. If the user has multiple unrelated issues, the latest one is prioritized in the final query.
 3. The rewritten query is embedded using the OpenAI embeddings API (`text-embedding-3-small`).
 4. The embedding is used to query a local ChromaDB collection, which stores pre-computed embeddings for every section of the MCL. ChromaDB's built-in approximate nearest neighbor (ANN) algorithm identifies the most semantically relevant chunks.
 5. A dynamic number of retrieved chunks are assembled into a context window and sent to the LLM, which generates a final answer constrained to those sources.
