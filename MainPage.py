@@ -12,14 +12,24 @@ Attempting to win:
     best UI/UX
     Best use of Gemini API
 '''
+import chromadb
 from flask import Flask, redirect, url_for, render_template, request, session, jsonify # type: ignore
 import json
 import os
 from dotenv import load_dotenv
 import google.generativeai as genai
 import os
+from openai import OpenAI
 from pymongo import MongoClient
 import requests
+
+chroma_client = chromadb.PersistentClient(path="./mcl_chroma_db")
+collection = chroma_client.get_collection(
+    name="michigan_laws",
+    # metadata={"hnsw:space": "cosine"}
+)
+
+openai_client = OpenAI()
 
 def database_conn():
     # Load variables from .env
@@ -46,6 +56,13 @@ if GOOGLE_API_KEY:
     genai.configure(api_key=GOOGLE_API_KEY)
 else:
     print("WARNING: GOOGLE_API_KEY not found in .env file")
+
+def get_embeddings(texts):
+    response = openai_client.embeddings.create(
+        input=texts,
+        model="text-embedding-3-small"
+    )
+    return [e.embedding for e in response.data]
 
 # Function to load Michigan laws context
 def get_mi_context():
@@ -156,52 +173,154 @@ def home():
     return render_template("index.html")
 
 @app.route("/chat", methods=["POST"])
+# def chat():
+#     """Chatbot route that uses Gemini API with Michigan legal context."""
+#     try:
+#         # Get user message and zip code from request
+#         data = request.get_json()
+#         user_message = data.get("message", "")
+#         zip_code = data.get("zipCode", None)
+        
+#         if not user_message:
+#             return jsonify({"error": "No message provided"}), 400
+        
+#         # Get Michigan laws context
+#         mi_context = get_mi_context()
+        
+#         # Create system instruction
+#         system_instruction = f"""You are a Michigan legal helper. Use these facts: {mi_context}
+
+# Explain everything in 6th-grade English. If you use a legal word, explain it immediately in parentheses.
+# Answer the user's question clearly and helpfully."""
+        
+#         # Check if user is asking about case law or precedents
+#         case_keywords = ["judge say", "judges say", "happened before", "case", "ruling", "precedent", "court decision", "what do lawyers"]
+#         is_case_question = any(keyword in user_message.lower() for keyword in case_keywords)
+        
+#         # If asking about cases, fetch and include relevant case law
+#         if is_case_question:
+#             cases = search_michigan_cases(user_message)
+#             if cases:
+#                 cases_context = format_cases_context(cases)
+#                 system_instruction += cases_context
+#                 system_instruction += "\n\nPlease include information about these Michigan court cases in your answer and explain them in simple terms."
+        
+#         # Add zip code context if provided (for future local court mapping)
+#         if zip_code:
+#             system_instruction += f"\n\nUser's location: Michigan zip code {zip_code}"
+        
+#         # Initialize Gemini model
+#         model = genai.GenerativeModel("gemini-2.5-flash-lite", system_instruction=system_instruction)
+        
+#         # Send message to Gemini and get response
+#         response = model.generate_content(user_message)
+#         assistant_message = response.text
+        
+#         # Return response to frontend
+#         return jsonify({"response": assistant_message}), 200
+    
+#     except Exception as e:
+#         return jsonify({"error": f"Error processing request: {str(e)}"}), 500
+
+@app.route("/chat", methods=["POST"])
 def chat():
-    """Chatbot route that uses Gemini API with Michigan legal context."""
     try:
-        # Get user message and zip code from request
         data = request.get_json()
         user_message = data.get("message", "")
         zip_code = data.get("zipCode", None)
-        
+
         if not user_message:
             return jsonify({"error": "No message provided"}), 400
-        
-        # Get Michigan laws context
-        mi_context = get_mi_context()
-        
-        # Create system instruction
-        system_instruction = f"""You are a Michigan legal helper. Use these facts: {mi_context}
 
-Explain everything in 6th-grade English. If you use a legal word, explain it immediately in parentheses.
-Answer the user's question clearly and helpfully."""
-        
-        # Check if user is asking about case law or precedents
-        case_keywords = ["judge say", "judges say", "happened before", "case", "ruling", "precedent", "court decision", "what do lawyers"]
-        is_case_question = any(keyword in user_message.lower() for keyword in case_keywords)
-        
-        # If asking about cases, fetch and include relevant case law
+        # ── 1. Retrieve relevant MCL sections from ChromaDB ──────────────────
+        query_embedding = get_embeddings([user_message])[0]  # OpenAI for embedding only
+
+        results = collection.query(
+            query_embeddings=[query_embedding],
+            n_results=20,
+            include=["documents", "metadatas", "distances"]
+        )
+
+        docs      = results['documents'][0]
+        metadatas = results['metadatas'][0]
+        distances = results['distances'][0]
+
+        # Hard cutoff
+        candidates = [
+            (doc, meta, dist)
+            for doc, meta, dist in zip(docs, metadatas, distances)
+            if dist <= 0.60
+        ]
+
+        # Adaptive cutoff with minimum 3 sections
+        MIN_RESULTS = 3
+        if candidates:
+            filtered = [candidates[0]]
+            for i in range(1, len(candidates)):
+                if i >= MIN_RESULTS:
+                    if candidates[i][2] - candidates[i-1][2] > 0.05:
+                        break
+                filtered.append(candidates[i])
+        else:
+            filtered = []
+
+        # ── 2. Build MCL context ──────────────────────────────────────────────
+        mcl_context = ""
+        retrieved_sections = []
+
+        if filtered:
+            for doc, meta, dist in filtered:
+                mcl_context += (
+                    f"MCL {meta['mcl_number']} — {meta['title']} (Chapter {meta['chapter']}):\n"
+                    f"{doc}\n\n"
+                )
+                retrieved_sections.append({
+                    "mcl_number": meta['mcl_number'],
+                    "title":      meta['title'],
+                    "distance":   round(dist, 4)
+                })
+
+        # ── 3. Check for case law questions ───────────────────────────────────
+        case_keywords = ["judge say", "judges say", "happened before", "case", "ruling",
+                         "precedent", "court decision", "what do lawyers"]
+        is_case_question = any(kw in user_message.lower() for kw in case_keywords)
+
+        cases_context = ""
         if is_case_question:
             cases = search_michigan_cases(user_message)
             if cases:
                 cases_context = format_cases_context(cases)
-                system_instruction += cases_context
-                system_instruction += "\n\nPlease include information about these Michigan court cases in your answer and explain them in simple terms."
-        
-        # Add zip code context if provided (for future local court mapping)
+
+        # ── 4. Build Gemini system instruction ───────────────────────────────
+        system_instruction = (
+            "You are a Michigan legal helper. "
+            "Explain everything in 6th-grade English. "
+            "If you use a legal word, explain it immediately in parentheses. "
+            "Always cite the specific MCL number when referencing a law. "
+            "Answer the user's question clearly and helpfully."
+        )
+
+        if mcl_context:
+            system_instruction += f"\n\nUse these relevant Michigan laws to answer:\n\n{mcl_context}"
+
+        if cases_context:
+            system_instruction += f"\n\n{cases_context}\nInclude information about these Michigan court cases and explain them in simple terms."
+
         if zip_code:
-            system_instruction += f"\n\nUser's location: Michigan zip code {zip_code}"
-        
-        # Initialize Gemini model
-        model = genai.GenerativeModel("gemini-2.5-flash-lite", system_instruction=system_instruction)
-        
-        # Send message to Gemini and get response
+            system_instruction += f"\n\nUser's location: Michigan zip code {zip_code}."
+
+        # ── 5. Call Gemini ────────────────────────────────────────────────────
+        model = genai.GenerativeModel(
+            "gemini-2.5-flash-lite",
+            system_instruction=system_instruction
+        )
         response = model.generate_content(user_message)
-        assistant_message = response.text
-        
-        # Return response to frontend
-        return jsonify({"response": assistant_message}), 200
-    
+
+        return jsonify({
+            "response":           response.text,
+            "retrieved_sections": retrieved_sections
+        }), 200
+
     except Exception as e:
         return jsonify({"error": f"Error processing request: {str(e)}"}), 500
 

@@ -13,3 +13,7 @@ __pycache__/
 *.log
 
 .DS_Store
+
+# Ignore downloaded legislature data folder
+legislature.mi.gov/
+mcl_chroma_db/
