@@ -12,6 +12,8 @@ Attempting to win:
     best UI/UX
     Best use of Gemini API
 '''
+import sys
+
 import chromadb
 from flask import Flask, redirect, url_for, render_template, request, session, jsonify # type: ignore
 import json
@@ -30,6 +32,7 @@ collection = chroma_client.get_collection(
 )
 
 openai_client = OpenAI()
+GEMINI_MODEL = "gemini-3.1-flash-lite-preview"
 
 def database_conn():
     # Load variables from .env
@@ -210,7 +213,7 @@ def home():
 #             system_instruction += f"\n\nUser's location: Michigan zip code {zip_code}"
         
 #         # Initialize Gemini model
-#         model = genai.GenerativeModel("gemini-2.5-flash-lite", system_instruction=system_instruction)
+#         model = genai.GenerativeModel(GEMINI_MODEL, system_instruction=system_instruction)
         
 #         # Send message to Gemini and get response
 #         response = model.generate_content(user_message)
@@ -231,8 +234,32 @@ def chat():
 
         if not user_message:
             return jsonify({"error": "No message provided"}), 400
+        
+        rag_query = ""
+        if current_chat_logs:
+            for log in current_chat_logs:
+                role = str(log.get("role"))
+                content = log.get("content")
+                if role == "user":
+                    rag_query += f"{content}\n"
+            rag_query += f"\n\n{user_message}\n"
+        else:
+            rag_query = user_message
+        model = genai.GenerativeModel(
+            GEMINI_MODEL,
+            system_instruction='''Rewrite a concise summarized version of the user's message.
+            This summary will be used to retrieve relevant Michigan laws, so include key details and context that would help identify applicable statutes.
+            Do not include any information that is not directly relevant to the legal issue at hand.
+            Do not include any information not provided by the user.
+            The summary should be clear and focused on the user's legal problem.
+            If there are multiple disjoint cases, keep ONLY the latest one.'''
+        )
+        response = model.generate_content(rag_query)
 
-        query_embedding = get_embeddings([user_message])[0]
+        # with open("chat_logs.txt", "w") as log_file:
+            # log_file.write(f"\n\nrag_query:\n{response.text}\n\n")
+
+        query_embedding = get_embeddings([response.text])[0]
 
         results = collection.query(
             query_embeddings=[query_embedding],
@@ -248,15 +275,16 @@ def chat():
         candidates = [
             (doc, meta, dist)
             for doc, meta, dist in zip(docs, metadatas, distances)
-            if dist <= 0.60
+            if dist <= 0.70
         ]
 
-        MIN_RESULTS = 3
+        MIN_RESULTS = 5
+        MAX_RESULTS = 15
         if candidates:
             filtered = [candidates[0]]
             for i in range(1, len(candidates)):
                 if i >= MIN_RESULTS:
-                    if candidates[i][2] - candidates[i-1][2] > 0.05:
+                    if candidates[i][2] - candidates[i-1][2] > 0.07 or i >= MAX_RESULTS:
                         break
                 filtered.append(candidates[i])
         else:
@@ -292,8 +320,12 @@ def chat():
             "Explain everything in 6th-grade English. "
             "If you use a legal word, explain it immediately in parentheses. "
             "Always cite the specific MCL number when referencing a law. "
+            "If an MCL section is irrelevant to the user's question, ignore it. "
             "Answer the user's question clearly and helpfully."
         )
+
+        if zip_code:
+            system_instruction += f"\n\nUser's location: Michigan zip code {zip_code}."
 
         if mcl_context:
             system_instruction += f"\n\nUse these relevant Michigan laws to answer:\n\n{mcl_context}"
@@ -301,19 +333,43 @@ def chat():
         if cases_context:
             system_instruction += f"\n\n{cases_context}\nInclude information about these Michigan court cases and explain them in simple terms."
 
-        if zip_code:
-            system_instruction += f"\n\nUser's location: Michigan zip code {zip_code}."
+        if current_chat_logs:
+            system_instruction += "\n\nCurrent conversation:\n"
+            for log in current_chat_logs:
+                role = str(log.get("role"))
+                content = log.get("content")
+                system_instruction += f"{role.title()}: {content}\n"
 
         model = genai.GenerativeModel(
-            "gemini-2.5-flash-lite",
+            GEMINI_MODEL,
             system_instruction=system_instruction
         )
         response = model.generate_content(user_message)
-
+        current_chat_logs.append({"role": "user", "content": user_message})
+        current_chat_logs.append({"role": "model", "content": response.text})
+        # with open("chat_logs.txt", "a") as log_file:
+        #     log_file.write(f"\n\nMCL Context:\n{mcl_context}\n\n")
         return jsonify({
             "response":           response.text,
             "retrieved_sections": retrieved_sections
         }), 200
+
+
+        # response = openai_client.chat.completions.create(
+        #     model="gpt-4o-mini",
+        #     messages=[
+        #         {"role": "system", "content": system_instruction},
+        #         {"role": "user", "content": user_message}
+        #     ]
+        # )
+        # current_chat_logs.append({"role": "user", "content": user_message})
+        # current_chat_logs.append({"role": "assistant", "content": response.choices[0].message.content})
+        # # with open("chat_logs.txt", "w") as log_file:
+        # #     log_file.write(f"\n\nChat logs:\n{current_chat_logs}\n\n")
+        # return jsonify({
+        #     "response":           response.choices[0].message.content,
+        #     "retrieved_sections": retrieved_sections
+        # }), 200
 
     except Exception as e:
         return jsonify({"error": f"Error processing request: {str(e)}"}), 500
@@ -373,5 +429,6 @@ def search_cases():
     return render_template("case_law.html", cases=cases, query=query)
 
 if __name__ == "__main__":
+    current_chat_logs = [{}]
     print("Starting Flask app on 0.0.0.0:5000 (all interfaces). Access via http://127.0.0.1:5000 locally")
     app.run(debug=True, host="0.0.0.0", port=5000)
