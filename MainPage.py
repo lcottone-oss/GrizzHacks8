@@ -32,8 +32,8 @@ collection = chroma_client.get_collection(
     # metadata={"hnsw:space": "cosine"}
 )
 
-SERVICE = "openai"
-# SERVICE = "gemini"
+# SERVICE = "openai"
+SERVICE = "gemini"
 # SERVICE = "claude"
 openai_client = OpenAI()
 # GEMINI_MODEL = "gemini-3.1-flash-lite-preview"
@@ -384,6 +384,8 @@ def chat():
 
         if mcl_context:
             system_instruction += f"\n\nUse these relevant Michigan laws to answer:\n\n{mcl_context}"
+            with open("chat_logs.txt", "a") as log_file:
+                log_file.write(f"\n\nmcl_context:\n{mcl_context}\n\n")
 
         if cases_context:
             system_instruction += f"\n\n{cases_context}\nInclude information about these Michigan court cases and explain them in simple terms."
