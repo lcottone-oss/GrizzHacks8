@@ -48,12 +48,11 @@ The chat feature requires a local ChromaDB persistent collection containing pre-
 
 To build it yourself:
 
-1. Obtain the full MCL text corpus
-2. Chunk the text into segments
-3. Embed each chunk using OpenAI's `text-embedding-3-small`
-4. Store the embeddings in a ChromaDB persistent collection
-
-Refer to the scripts in `ai-chatbot/` for the ingestion pipeline. Place the completed collection where the pipeline expects to find it before running the app.
+1. Scrape the full MCL text from [legislature.mi.gov/documents/mcl/](https://legislature.mi.gov/documents/mcl/)
+2. Convert the `.xml` files into `.jsonl` format — each line of the `.jsonl` file corresponds to a single MCL section
+3. Chunk the text into segments — each MCL section can generally be used as a single chunk, but some sections are too large for a single API call and need to be broken into smaller segments
+4. Embed each chunk using OpenAI's `text-embedding-3-small`
+5. Store the embeddings in a ChromaDB persistent collection
 
 ---
 
