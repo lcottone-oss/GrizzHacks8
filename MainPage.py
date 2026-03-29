@@ -45,6 +45,8 @@ OPENAI_MODEL = "gpt-4o-mini"
 
 CLAUDE_MODEL = "claude-haiku-4-5"
 
+current_chat_logs = [{}]
+
 def database_conn():
     # Load variables from .env
     load_dotenv()
@@ -469,6 +471,5 @@ def search_cases():
     return render_template("case_law.html", cases=cases, query=query)
 
 if __name__ == "__main__":
-    current_chat_logs = [{}]
     print("Starting Flask app on 0.0.0.0:5000 (all interfaces). Access via http://127.0.0.1:5000 locally")
     app.run(debug=True, host="0.0.0.0", port=5000)

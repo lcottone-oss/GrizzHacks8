@@ -590,6 +590,13 @@
 
         document.getElementById('userInput').value = '';
 
+        const loadingMsg = document.createElement('div');
+        loadingMsg.className = 'assistant-message';
+        loadingMsg.id = 'loadingMsg';
+        loadingMsg.textContent = 'Thinking...';
+        chatWindow.appendChild(loadingMsg);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+
         // Send to backend
         fetch('/chat', {
             method: 'POST',
@@ -603,6 +610,8 @@
         })
         .then(response => response.json())
         .then(data => {
+            const loading = document.getElementById('loadingMsg');
+            if (loading) loading.remove();
             const assistantMessage = document.createElement('div');
             assistantMessage.className = 'assistant-message';
             const responseText = data.response || data.error || 'No response received';
