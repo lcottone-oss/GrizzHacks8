@@ -1,51 +1,134 @@
-# GrizzHacks8
-This is the code for GrizzHacks 8
+# Michigan Legal Navigator
 
-Phase 1: Project Setup 
+A web application built at **GrizzHacks 8** that helps Michigan residents understand their legal rights in plain English.
 
-Repo Initialization: Clone the ai-chatbot-with-memory repo. 
+Legal information in the US is technically public but practically inaccessible. The Michigan Compiled Laws (MCL) spans thousands of sections written in dense statutory language. This app makes it conversational — a user types a question, and the system retrieves the relevant sections of actual Michigan law and generates a plain-language answer grounded in those sources.
 
-The "MCL Registry" (Michigan Compiled Laws): 
-Create a data/michigan_rules.json file. This prevents the AI from making up dates.
+---
 
-Small Claims: Max $7,000; Filing fees $30–$70.
+## Features
 
-Renters: Max deposit 1.5x rent; Return deadline 30 days.
+### Informational Pages
 
-Injury: 3-year standard deadline (MCL 600.5805).
+Four dedicated pages cover the most common legal situations Michigan residents encounter, with plain-language explanations and direct links to official Michigan State Court Administrative Office (SCAO) forms:
 
-API Key: Get one free key from Google AI Studio (Gemini 1.5 Flash). 
-Store it in a .env file 
+- **Renter's Rights** — security deposit limits, return deadlines, eviction forms
+- **Small Claims** — the $7,000 claim ceiling, filing process, e-filing link
+- **Personal Injury** — statute of limitations, mini-tort limits, what to document
+- **Small Business** — LARA registration, Match on Main grant info ($25k, April 2026 deadline)
 
-Phase 2: The "Anti-Jargon" Logic (Backend)
-The System Prompt: Modify the chatbot's system message.
+### AI Chat Interface
 
-Goal: Tell the AI: "You are a Michigan legal guide. Explain everything like I'm 12. If you say 'Statute of Limitations,' immediately follow it with '(The legal deadline to sue).'"
+The chat window is backed by a full retrieval-augmented generation (RAG) pipeline over the entire Michigan Compiled Laws corpus.
 
-Context Injection: Write a small Python function that reads your michigan_rules.json and attaches it to every user message before it goes to Gemini.
-to make sure the AI always "sees" the $7,000 limit before answering a small claims question.
+**How it works:**
 
-Phase 3: User Experience & Accessibility (Frontend)
-"Quick-Start" Triage Buttons: Add four big buttons above the chat input:
+1. The user submits a question in natural language.
+2. Before retrieval, an LLM rewrites the query into a form closer to how the answer would be phrased in statute — this improves retrieval quality by bridging the vocabulary gap between casual questions and legal text.
+3. The rewritten query is embedded using the OpenAI embeddings API (`text-embedding-3-small`).
+4. The embedding is used to query a local ChromaDB collection, which stores pre-computed embeddings for every section of the MCL. ChromaDB's built-in approximate nearest neighbor (ANN) algorithm identifies the most semantically relevant chunks.
+5. A dynamic number of retrieved chunks are assembled into a context window and sent to the LLM, which generates a final answer constrained to those sources.
+6. The response is written at a plain reading level, with legal terms defined inline as they appear.
 
-"Small Business Grants"
+**The underlying database** is a ChromaDB persistent collection containing pre-embedded chunks of the full MCL. It is not included in this repository — the collection exceeds 800 MB. See setup instructions below.
 
-"Small Claims ($7k (legal limit under michigan legeslative laws))"
+**Supported LLM providers:** The chat backend supports OpenAI, Google Gemini, and Anthropic Claude. Switching between them requires changing a single commented line in the backend config — no other code changes needed.
 
-"Renter/Landlord Rights"
+---
 
-"Injury/Accident Help"
+## Tech Stack
 
-The "Plain English" Toggle: (Optional fun feature) Add a toggle switch that says "Explain it simpler" which changes the AI's temperature or prompt.
+- **Backend:** Python, Flask
+- **RAG / Vector Search:** ChromaDB (persistent client, cosine similarity, ANN retrieval)
+- **Embeddings:** OpenAI `text-embedding-3-small`
+- **LLM (switchable):** OpenAI / Google Gemini / Anthropic Claude
+- **Frontend:** HTML, Bootstrap (Jinja2 templates served by Flask)
+- **Config:** `python-dotenv`
 
-Phase 4: The Michigan "Action" Links
-The SCAO Link Bank: Create a dictionary of links to official Michigan State Court Administrative Office (SCAO) PDFs.
+---
 
-Example: If the user is a renter, the bot should provide a direct link to Form DC 102a (Complaint, Nonpayment of Rent).
+## Project Structure
 
-Detroit/Local Resources: Add a section for local help like the Detroit Neighborhood Entrepreneurs Project (DNEP) for the small business feature.
+```
+GrizzHacks8/
+├── MainPage.py              # Flask app — routes and chat handler
+├── laws.json                # Small set of quick-reference MCL facts (fees, deadlines, links)
+├── requirements.txt         # Python dependencies
+├── .env                     # API keys — not committed
+├── RUN_INSTRUCTIONS.md      # Detailed setup reference
+├── Templates/
+│   ├── base.html
+│   ├── index.html           # Main page with chat UI
+│   ├── RentersRights.html
+│   ├── small_businesses.html
+│   ├── p_injury.html
+│   └── s_claims.html
+└── ai-chatbot/              # RAG pipeline — ChromaDB collection not included (>800 MB)
+```
 
-Phase 5: Final Polish & possibly Deployment
-Bug Bash: Have the bot by asking it for legal advice outside of Michigan. Ensure the bot says: "I only know Michigan law!"
+**Note on `laws.json`:** This file contains a small number of hard-coded, authoritative figures (filing fees, deposit limits, grant deadlines, SCAO form URLs) used to anchor the system prompt in specifics that an LLM might otherwise hallucinate. It is not the knowledge source for the chat — the ChromaDB MCL collection is.
 
-Connect your GitHub.
+---
+
+## Setup
+
+### Prerequisites
+
+- Python 3.8+
+- An API key for whichever LLM provider you intend to use (OpenAI, Gemini, or Anthropic)
+- The pre-built ChromaDB MCL collection (not included — must be built or obtained separately)
+
+### Install
+
+```bash
+git clone https://github.com/lcottone-oss/GrizzHacks8.git
+cd GrizzHacks8
+pip install -r requirements.txt
+```
+
+### Configure
+
+Create a `.env` file in the project root with keys for whichever provider(s) you plan to use:
+
+```
+OPENAI_API_KEY=your-openai-key-here
+GEMINI_API_KEY=your-gemini-key-here
+ANTHROPIC_API_KEY=your-anthropic-key-here
+```
+
+To switch LLM providers, comment in the appropriate line in the backend and comment out the others — one line change.
+
+### ChromaDB Collection
+
+The RAG pipeline requires the pre-embedded MCL collection to be present locally. This is not in the repository due to its size (>800 MB). To build it yourself:
+
+1. Obtain the full MCL text corpus
+2. Chunk the text into segments
+3. Embed each chunk using `text-embedding-3-small`
+4. Store the embeddings in a ChromaDB persistent collection
+
+Refer to the scripts in `ai-chatbot/` for the embedding and ingestion pipeline.
+
+### Run
+
+```bash
+python MainPage.py
+```
+
+Then open `http://localhost:5000` in your browser.
+
+---
+
+## Limitations
+
+- **Michigan law only.** The system prompt explicitly refuses questions outside the scope of Michigan law.
+- **Not legal advice.** This app provides legal information, not legal counsel. It is not a substitute for an attorney in contested or high-stakes situations.
+- **ChromaDB not included.** The MCL vector database must be rebuilt or sourced separately before the chat feature is fully functional.
+- **Development server only.** Flask's built-in server is not suitable for production. Use Gunicorn behind a reverse proxy and set `debug=False`.
+
+---
+
+## Built At
+
+**GrizzHacks 8** — March 2026  
+Contributors: [@lcottone-oss](https://github.com/lcottone-oss), [@Tamanna-2100](https://github.com/Tamanna-2100)
