@@ -111,7 +111,7 @@ Answer the user's question clearly and helpfully."""
 
 @app.route("/Renters_Rights")
 def renters_rights():
-    data1 = list(db.LegalInfo.find())
+    data1 = list(db.RentersRights.find())
     return render_template("RentersRights.html", data = data1)
 
 @app.route("/Small_Businesses")
