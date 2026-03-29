@@ -493,7 +493,15 @@
 <div id="chatWrapper">
     <div class="chat-header">
         <h3>Legal Assistant</h3>
-        <button class="close-chat" onclick="toggleChat()">×</button>
+        <div style="display:flex; gap:8px; align-items:center;">
+            {% if current_user.is_authenticated %}
+            <button onclick="toggleHistory()" title="Past conversations"
+                style="background:none; border:none; color:var(--accent-gold); cursor:pointer; font-size:18px; padding:0; line-height:1;">
+                ☰
+            </button>
+            {% endif %}
+            <button class="close-chat" onclick="toggleChat()">×</button>
+        </div>
     </div>
     <div id="chatWindow">
         <div class="assistant-message">
@@ -505,10 +513,37 @@
         <button onclick="sendMessage()">Send</button>
         <button onclick="exportChat()" title="Export chat">↓</button>
     </div>
+    <!-- History Panel (logged-in only) -->
+    {% if current_user.is_authenticated %}
+    <div id="historyPanel" style="
+        display: none;
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: white;
+        flex-direction: column;
+        z-index: 10;
+    ">
+        <div style="background: var(--charcoal); color: var(--accent-gold); padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--accent-gold);">
+            <span style="font-family: 'Playfair Display', serif; font-weight: 700; font-size: 16px;">Past Conversations</span>
+            <button onclick="toggleHistory()" style="background:none; border:none; color:var(--accent-gold); font-size:24px; cursor:pointer; line-height:1;">×</button>
+        </div>
+        <div id="historyList" style="flex:1; overflow-y:auto; padding: 8px 0;">
+            <p style="padding: 16px; color: var(--legal-gray); font-size: 14px;">Loading...</p>
+        </div>
+        <div style="padding: 12px 16px; border-top: 1px solid #e5e7eb;">
+            <button onclick="newConversation()" style="width:100%; padding:10px; background:var(--charcoal); color:var(--accent-gold); border:none; font-weight:600; font-size:13px; text-transform:uppercase; letter-spacing:0.5px; cursor:pointer;">
+                + New Conversation
+            </button>
+        </div>
+    </div>
+    {% endif %}
 </div>
 
 <script>
-    // Toggle chat visibility
+    let currentConversationId = null;
+    let guestHistory = [];
+
+
     function toggleChat() {
         const chatWrapper = document.getElementById('chatWrapper');
         chatWrapper.classList.toggle('visible');
@@ -517,49 +552,133 @@
         }
     }
 
-    // Quick question action
-    function quickQuestion(question, event) {
-        if (event && typeof event.preventDefault === 'function') {
-            event.preventDefault();
+
+    function toggleHistory() {
+        const panel = document.getElementById('historyPanel');
+        if (!panel) return;
+        const isOpen = panel.style.display === 'flex';
+        if (!isOpen) {
+            panel.style.display = 'flex';
+            loadConversations();
+        } else {
+            panel.style.display = 'none';
         }
-        document.getElementById('userInput').value = question;
-        const chatWrapper = document.getElementById('chatWrapper');
-        if (!chatWrapper.classList.contains('visible')) {
-            toggleChat();
-        }
-        setTimeout(() => {
-            sendMessage();
-        }, 300);
     }
 
-    // Store zip code safely (may not exist in all modes)
+    function loadConversations() {
+        fetch('/conversations')
+            .then(r => r.json())
+            .then(convs => {
+                const list = document.getElementById('historyList');
+                if (!convs.length) {
+                    list.innerHTML = '<p style="padding:16px; color:var(--legal-gray); font-size:14px;">No past conversations yet.</p>';
+                    return;
+                }
+                list.innerHTML = convs.map(c => `
+                    <div style="
+                        padding: 12px 16px;
+                        border-bottom: 1px solid #f0f0f0;
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                    " onmouseover="this.style.background='#f9f9f9'" onmouseout="this.style.background='white'">
+                        <div onclick="loadConversation('${c.id}')" style="flex:1; cursor:pointer; min-width:0;">
+                            <div style="font-weight:600; font-size:14px; color:var(--charcoal); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                                ${escapeHtml(c.title || 'Untitled')}
+                            </div>
+                            <div style="font-size:12px; color:var(--legal-gray); margin-top:2px;">${c.created_at}</div>
+                        </div>
+                        <button onclick="deleteConversation('${c.id}')" title="Delete" style="
+                            background: none;
+                            border: none;
+                            color: #aaa;
+                            cursor: pointer;
+                            font-size: 16px;
+                            padding: 4px;
+                            flex-shrink: 0;
+                            line-height: 1;
+                            transition: color 0.2s;
+                        " onmouseover="this.style.color='red'" onmouseout="this.style.color='#aaa'">🗑</button>
+                    </div>
+                `).join('');
+            })
+            .catch(() => {
+                document.getElementById('historyList').innerHTML = '<p style="padding:16px; color:red; font-size:14px;">Failed to load.</p>';
+            });
+    }
+
+    function loadConversation(convId) {
+        fetch(`/conversation/${convId}`)
+            .then(r => r.json())
+            .then(data => {
+                currentConversationId = data.id;
+                const chatWindow = document.getElementById('chatWindow');
+                chatWindow.innerHTML = '';
+                data.messages.forEach(m => {
+                    const div = document.createElement('div');
+                    div.className = m.role === 'user' ? 'user-message' : 'assistant-message';
+                    div.innerHTML = formatChatMessage(m.content);
+                    div.dataset.raw = m.content;
+                    chatWindow.appendChild(div);
+                });
+                chatWindow.scrollTop = chatWindow.scrollHeight;
+                // Close history panel
+                document.getElementById('historyPanel').style.display = 'none';
+            });
+    }
+
+    function newConversation() {
+        currentConversationId = null;
+        guestHistory = [];
+        const chatWindow = document.getElementById('chatWindow');
+        chatWindow.innerHTML = '<div class="assistant-message">Welcome to Mitten Mentor. I\'m here to help you understand Michigan law. Ask me anything about your rights.</div>';
+        document.getElementById('historyPanel').style.display = 'none';
+        document.getElementById('userInput').focus();
+    }
+
+    function deleteConversation(convId) {
+        if (!confirm('Delete this conversation?')) return;
+        fetch(`/conversation/${convId}/delete`, { method: 'POST' })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    // If currently viewing this convo, reset chat
+                    if (currentConversationId === convId) {
+                        newConversation();
+                    }
+                    loadConversations(); // refresh list
+                }
+            });
+    }
+
+    function quickQuestion(question, event) {
+        if (event && typeof event.preventDefault === 'function') event.preventDefault();
+        document.getElementById('userInput').value = question;
+        const chatWrapper = document.getElementById('chatWrapper');
+        if (!chatWrapper.classList.contains('visible')) toggleChat();
+        setTimeout(() => sendMessage(), 300);
+    }
+
+
     const zipCodeInput = document.getElementById('zipCode');
     if (zipCodeInput) {
         zipCodeInput.addEventListener('change', function() {
             localStorage.setItem('userZipCode', this.value);
         });
     }
-
-    // Load saved zip code
     window.addEventListener('DOMContentLoaded', function() {
         const savedZip = localStorage.getItem('userZipCode');
-        if (savedZip && zipCodeInput) {
-            zipCodeInput.value = savedZip;
-        }
+        if (savedZip && zipCodeInput) zipCodeInput.value = savedZip;
     });
 
+
     function escapeHtml(text) {
-        return text.replace(/&/g, '&amp;')
-                   .replace(/</g, '&lt;')
-                   .replace(/>/g, '&gt;')
-                   .replace(/"/g, '&quot;')
-                   .replace(/'/g, '&#039;');
+        return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                   .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
     }
 
     function formatChatMessage(text) {
         let html = escapeHtml(text);
-
-        // Basic Markdown-like formatting
         html = html.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
         html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
         html = html.replace(/\*\*\*([^*]+)\*\*\*/g, '<strong><em>$1</em></strong>');
@@ -574,21 +693,14 @@
         html = html.replace(/^## (.*)$/gm, '<h2>$1</h2>');
         html = html.replace(/^# (.*)$/gm, '<h1>$1</h1>');
         html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
-
-        // Auto-link plain URLs (http(s):// and www.)
         html = html.replace(/(^|\s)(https?:\/\/[^\s<]+)(?=\s|$)/g, '$1<a href="$2" target="_blank" rel="noopener noreferrer">$2</a>');
         html = html.replace(/(^|\s)(www\.[^\s<]+)(?=\s|$)/g, '$1<a href="http://$2" target="_blank" rel="noopener noreferrer">$2</a>');
-
-        // Simple bullet list conversion
         html = html.replace(/^\s*[-*+] (.*)$/gm, '<div class="markdown-list-item">• $1</div>');
-
-        // Preserve line breaks
         html = html.replace(/\n/g, '<br>');
-
         return html;
     }
 
-    // Send message
+
     document.getElementById('userInput').addEventListener('keypress', function(e) {
         if (e.key === 'Enter') sendMessage();
     });
@@ -597,17 +709,14 @@
         const userInput = document.getElementById('userInput').value.trim();
         const zipCodeInput = document.getElementById('zipCode');
         const zipCode = zipCodeInput ? zipCodeInput.value.trim() : '';
-        
         if (!userInput) return;
 
-        // Add user message to chat
         const chatWindow = document.getElementById('chatWindow');
         const userMessage = document.createElement('div');
         userMessage.className = 'user-message';
         userMessage.textContent = userInput;
         userMessage.dataset.raw = userInput;
         chatWindow.appendChild(userMessage);
-
         document.getElementById('userInput').value = '';
 
         const loadingMsg = document.createElement('div');
@@ -617,7 +726,6 @@
         chatWindow.appendChild(loadingMsg);
         chatWindow.scrollTop = chatWindow.scrollHeight;
 
-        // Animate the dots while waiting
         const dots = ['Thinking.', 'Thinking..', 'Thinking...'];
         let dotIndex = 0;
         const dotInterval = setInterval(() => {
@@ -626,20 +734,20 @@
             if (msg) msg.textContent = dots[dotIndex];
         }, 500);
 
-        // Send to backend
         fetch('/chat', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ 
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
                 message: userInput,
-                zipCode: zipCode || null
+                zipCode: zipCode || null,
+                conversation_id: currentConversationId,
+                history: guestHistory
             })
         })
         .then(response => response.json())
         .then(data => {
             clearInterval(dotInterval);
+            if (data.conversation_id) currentConversationId = data.conversation_id;
             const loading = document.getElementById('loadingMsg');
             if (loading) loading.remove();
             const assistantMessage = document.createElement('div');
@@ -649,9 +757,18 @@
             assistantMessage.dataset.raw = responseText;
             chatWindow.appendChild(assistantMessage);
             chatWindow.scrollTop = chatWindow.scrollHeight;
+
+            // Track history for guests
+            if (!data.conversation_id) {
+                guestHistory.push({ role: "user", content: userInput });
+                guestHistory.push({ role: "assistant", content: responseText });
+            }
         })
         .catch(error => {
             console.error('Error:', error);
+            clearInterval(dotInterval);
+            const loading = document.getElementById('loadingMsg');
+            if (loading) loading.remove();
             const errorMessage = document.createElement('div');
             errorMessage.className = 'assistant-message';
             errorMessage.textContent = 'Error connecting to the server. Please try again.';
@@ -661,21 +778,18 @@
         chatWindow.scrollTop = chatWindow.scrollHeight;
     }
 
+
     function exportChat() {
         const messages = document.querySelectorAll('#chatWindow .user-message, #chatWindow .assistant-message');
         if (messages.length <= 1) return;
-
         let output = '# Mitten Mentor — Chat Export\n';
-        output += `*${new Date().toLocaleString()}*\n\n`;
-        output += '---\n\n';
-
+        output += `*${new Date().toLocaleString()}*\n\n---\n\n`;
         messages.forEach(msg => {
             const isUser = msg.classList.contains('user-message');
             const role = isUser ? '### 🧑 You' : '### ⚖️ Mitten Mentor';
             const text = msg.dataset.raw || msg.innerText;
             output += `${role}\n\n${text}\n\n---\n\n`;
         });
-
         const blob = new Blob([output], { type: 'text/markdown' });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
@@ -684,22 +798,13 @@
         URL.revokeObjectURL(a.href);
     }
 
-    // Scroll-triggered animations
-    const observerOptions = {
-        threshold: 0.15,
-        rootMargin: '0px 0px -50px 0px'
-    };
 
+    const observerOptions = { threshold: 0.15, rootMargin: '0px 0px -50px 0px' };
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.classList.add('in-view');
-            }
+            if (entry.isIntersecting) entry.target.classList.add('in-view');
         });
     }, observerOptions);
-
-    document.querySelectorAll('.scroll-fade').forEach(el => {
-        observer.observe(el);
-    });
+    document.querySelectorAll('.scroll-fade').forEach(el => observer.observe(el));
 </script>
 {% endblock %}
