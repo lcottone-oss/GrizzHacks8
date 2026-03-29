@@ -289,6 +289,24 @@ nav, main, .container {
       </li>
 
     </ul>
+
+    <ul class="navbar-nav ml-auto">
+      {% if current_user.is_authenticated %}
+        <li class="nav-item">
+          <span class="nav-link" style="color: var(--accent-gold) !important;">{{ current_user.username }}</span>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/logout">Logout</a>
+        </li>
+      {% else %}
+        <li class="nav-item">
+          <a class="nav-link" href="/login">Login</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/register">Register</a>
+        </li>
+      {% endif %}
+    </ul>
   </div>
 </nav>
 
