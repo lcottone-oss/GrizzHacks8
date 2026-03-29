@@ -1,8 +1,9 @@
 Flask==2.3.3
-python-dotenv==1.0.0
-google-generativeai>=0.5.3
 Werkzeug==2.3.7
-pymongo>=4.0.0
-requests>=2.31.0
+python-dotenv==1.0.0
+openai>=1.0.0
+google-generativeai>=0.5.3
 anthropic>=0.7.0
 chromadb>=0.4.0
+requests>=2.31.0
+pymongo>=4.0.0
