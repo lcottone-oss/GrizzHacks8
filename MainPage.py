@@ -207,7 +207,7 @@ Answer the user's question clearly and helpfully."""
 
 @app.route("/Renters_Rights")
 def renters_rights():
-    data1 = list(db.LegalInfo.find())
+    data1 = list(db.RentersRights.find())
     return render_template("RentersRights.html", data = data1)
 
 @app.route("/Small_Businesses")
@@ -260,4 +260,5 @@ def search_cases():
     return render_template("case_law.html", cases=cases, query=query)
 
 if __name__ == "__main__":
-    app.run(debug = True)
+    print("Starting Flask app on 0.0.0.0:5000 (all interfaces). Access via http://127.0.0.1:5000 locally")
+    app.run(debug=True, host="0.0.0.0", port=5000)
