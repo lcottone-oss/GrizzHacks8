@@ -19,16 +19,18 @@ from dotenv import load_dotenv
 import google.generativeai as genai
 import os
 from pymongo import MongoClient
+from bson import ObjectId
 
 def database_conn():
     # Load variables from .env
     load_dotenv()
+    #print("ENV loaded:", os.path.exists(".env"), "MONGO_URL:", bool(os.getenv("MONGO_URL")))
 
     # Connect to MongoDB Atlas
-    client = MongoClient(os.getenv("MONGO_URI"))
+    client = MongoClient(os.getenv("MONGO_URL"))
 
-    # set variable db = the mangoDB hackathonDB database
-    db = client["hackathonDB"]
+    # set variable db = the mangoDB HackathonDB database
+    db = client["HackathonDB"]
     return db
 
 # Load environment variables from .env file
@@ -112,6 +114,9 @@ Answer the user's question clearly and helpfully."""
 @app.route("/Renters_Rights")
 def renters_rights():
     data1 = list(db.RentersRights.find())
+    parse_list = []
+    for item in data1:
+        parse_list.append(item['AffordableRentalHousingDirectory'])
     return render_template("RentersRights.html", data = data1)
 
 @app.route("/Small_Businesses")
