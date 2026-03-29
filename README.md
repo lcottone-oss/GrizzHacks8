@@ -130,4 +130,4 @@ Then open `http://localhost:5000` in your browser.
 ## Built At
 
 **GrizzHacks 8** — March 2026  
-Contributors: [@lcottone-oss](https://github.com/lcottone-oss), [@Tamanna-2100](https://github.com/Tamanna-2100)
+Contributors: [@kMuhtasim](https://github.com/kMuhtasim), [@lcottone-oss](https://github.com/lcottone-oss), [@pihoo1220-creator](https://github.com/pihoo1220-creator), [@Tamanna-2100](https://github.com/Tamanna-2100)
