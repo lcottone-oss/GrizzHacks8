@@ -281,26 +281,30 @@
     .user-message {
         margin: 12px 0;
         padding: 12px 16px;
-        background: var(--charcoal);
-        color: var(--accent-gold);
-        border-left: 3px solid var(--accent-gold);
+        background: #1f2937;
+        color: #f8fafc;
+        border-left: 3px solid #38bdf8;
         max-width: 85%;
         margin-left: auto;
         word-wrap: break-word;
-        font-size: 14px;
-        line-height: 1.5;
+        font-size: 15px;
+        line-height: 1.6;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.24);
     }
 
     .assistant-message {
         margin: 12px 0;
         padding: 12px 16px;
-        background: black;
-        color: var(--charcoal);
-        border-left: 3px solid var(--legal-gray);
+        background: #e2e8f0;
+        color: #0f172a;
+        border-left: 3px solid #64748b;
         max-width: 85%;
         word-wrap: break-word;
-        font-size: 14px;
-        line-height: 1.5;
+        font-size: 15px;
+        line-height: 1.6;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.12);
     }
 
     /* Chat Input */
@@ -551,6 +555,10 @@
         html = html.replace(/^## (.*)$/gm, '<h2>$1</h2>');
         html = html.replace(/^# (.*)$/gm, '<h1>$1</h1>');
         html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+
+        // Auto-link plain URLs (http(s):// and www.)
+        html = html.replace(/(^|\s)(https?:\/\/[^\s<]+)(?=\s|$)/g, '$1<a href="$2" target="_blank" rel="noopener noreferrer">$2</a>');
+        html = html.replace(/(^|\s)(www\.[^\s<]+)(?=\s|$)/g, '$1<a href="http://$2" target="_blank" rel="noopener noreferrer">$2</a>');
 
         // Simple bullet list conversion
         html = html.replace(/^\s*[-*+] (.*)$/gm, '<div class="markdown-list-item">• $1</div>');
